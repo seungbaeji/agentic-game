@@ -1,20 +1,33 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import Protocol
 
 from agentic_game.agent.graph.battle import build_battle_subgraph
 from agentic_game.agent.graph.craft import build_craft_subgraph
 from agentic_game.agent.models import ParentNode, SubgraphName
 from agentic_game.agent.runtime.tools import ToolInvoker
-from agentic_game.agent.state import BattleState, CraftState, ParentState
-from agentic_game.agent.types import RuntimePayload
+from agentic_game.agent.state import CraftState, ParentState
+from agentic_game.agent.types import RuntimePayload, StoreRefs
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
 from agentic_game.domain.battle import BattlePhase, BattleResult
 from agentic_game.domain.craft import CraftPhase, CraftResult
 from agentic_game.flow.craft import answer_craft_result_question
 
 
-def remove_runtime_routing(state: BattleState | CraftState) -> RuntimePayload:
+class InvokableGraph(Protocol):
+    def invoke(self, input: RuntimePayload) -> RuntimePayload:
+        """Run a compiled graph with runtime state."""
+        ...
+
+
+type BeforeInvokeHook = Callable[
+    [StorePort, RuntimePayload, ParentState, StoreRefs],
+    ParentState | None,
+]
+
+
+def remove_runtime_routing(state: RuntimePayload) -> RuntimePayload:
     """Remove routing-only keys before persisting graph state."""
     persisted_state = dict(state)
     persisted_state.pop("next_node", None)
@@ -41,6 +54,56 @@ def load_latest_craft_result(
     return latest_result
 
 
+def make_subgraph_wrapper(
+    *,
+    store: StorePort,
+    graph: InvokableGraph,
+    subgraph: SubgraphName,
+    state_ref_key: str,
+    state_namespace: tuple[str, str],
+    initial_state: RuntimePayload,
+    before_invoke: BeforeInvokeHook | None = None,
+):
+    """Create a parent node that loads, invokes, and persists a subgraph."""
+
+    def subgraph_node(state: ParentState) -> ParentState:
+        refs = dict(state.get("store_refs", {}))
+        state_ref = refs.get(state_ref_key)
+
+        if state_ref:
+            saved_state = store.get(namespace=state_namespace, key="latest")
+        else:
+            saved_state = dict(initial_state)
+
+        if before_invoke is not None:
+            hook_result = before_invoke(store, saved_state, state, refs)
+            if hook_result is not None:
+                return hook_result
+
+        subgraph_state = {
+            **saved_state,
+            "user_input": state.get("user_input", ""),
+            "human_input": state.get("user_input", ""),
+        }
+
+        result = graph.invoke(subgraph_state)
+
+        refs[state_ref_key] = store.put(
+            namespace=state_namespace,
+            key="latest",
+            value=remove_runtime_routing(result),
+        )
+
+        return {
+            "current_subgraph": subgraph,
+            "store_refs": refs,
+            "response": result.get("response", ""),
+            "next_node": ParentNode.RESPONSE,
+        }
+
+    return subgraph_node
+
+
 def make_battle_wrapper(
     store: StorePort,
     llm: LLMPort,
@@ -57,42 +120,18 @@ def make_battle_wrapper(
         random,
     )
 
-    def battle_subgraph_node(state: ParentState) -> ParentState:
-        """Load battle state, run the battle subgraph, and persist the result."""
-        refs = dict(state.get("store_refs", {}))
-        state_ref = refs.get("battle_state")
-
-        if state_ref:
-            saved_state = store.get(namespace=("battle", "state"), key="latest")
-        else:
-            saved_state = {
-                "phase": BattlePhase.PREPARE,
-                "latest_refs": {},
-                "history_refs": {},
-            }
-
-        battle_state: BattleState = {
-            **saved_state,
-            "user_input": state.get("user_input", ""),
-            "human_input": state.get("user_input", ""),
-        }
-
-        result: BattleState = battle_graph.invoke(battle_state)
-
-        refs["battle_state"] = store.put(
-            namespace=("battle", "state"),
-            key="latest",
-            value=remove_runtime_routing(result),
-        )
-
-        return {
-            "current_subgraph": SubgraphName.BATTLE,
-            "store_refs": refs,
-            "response": result.get("response", ""),
-            "next_node": ParentNode.RESPONSE,
-        }
-
-    return battle_subgraph_node
+    return make_subgraph_wrapper(
+        store=store,
+        graph=battle_graph,
+        subgraph=SubgraphName.BATTLE,
+        state_ref_key="battle_state",
+        state_namespace=("battle", "state"),
+        initial_state={
+            "phase": BattlePhase.PREPARE,
+            "latest_refs": {},
+            "history_refs": {},
+        },
+    )
 
 
 def make_craft_wrapper(
@@ -111,20 +150,12 @@ def make_craft_wrapper(
         random,
     )
 
-    def craft_subgraph_node(state: ParentState) -> ParentState:
-        """Load craft state, answer follow-ups, run craft graph, and persist."""
-        refs = dict(state.get("store_refs", {}))
-        state_ref = refs.get("craft_state")
-
-        if state_ref:
-            saved_state = store.get(namespace=("craft", "state"), key="latest")
-        else:
-            saved_state = {
-                "phase": CraftPhase.SELECT_RECIPE,
-                "latest_refs": {},
-                "history_refs": {},
-            }
-
+    def answer_followup(
+        store: StorePort,
+        saved_state: RuntimePayload,
+        state: ParentState,
+        refs: StoreRefs,
+    ) -> ParentState | None:
         followup_response = answer_craft_result_question(
             phase=saved_state.get("phase", CraftPhase.SELECT_RECIPE),
             latest_result=load_latest_craft_result(store, saved_state),
@@ -138,25 +169,18 @@ def make_craft_wrapper(
                 "next_node": ParentNode.RESPONSE,
             }
 
-        craft_state: CraftState = {
-            **saved_state,
-            "user_input": state.get("user_input", ""),
-            "human_input": state.get("user_input", ""),
-        }
+        return None
 
-        result: CraftState = craft_graph.invoke(craft_state)
-
-        refs["craft_state"] = store.put(
-            namespace=("craft", "state"),
-            key="latest",
-            value=remove_runtime_routing(result),
-        )
-
-        return {
-            "current_subgraph": SubgraphName.CRAFT,
-            "store_refs": refs,
-            "response": result.get("response", ""),
-            "next_node": ParentNode.RESPONSE,
-        }
-
-    return craft_subgraph_node
+    return make_subgraph_wrapper(
+        store=store,
+        graph=craft_graph,
+        subgraph=SubgraphName.CRAFT,
+        state_ref_key="craft_state",
+        state_namespace=("craft", "state"),
+        initial_state={
+            "phase": CraftPhase.SELECT_RECIPE,
+            "latest_refs": {},
+            "history_refs": {},
+        },
+        before_invoke=answer_followup,
+    )
