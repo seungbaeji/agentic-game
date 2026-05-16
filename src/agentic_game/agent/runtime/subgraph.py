@@ -8,6 +8,7 @@ from agentic_game.agent.graph.craft import build_craft_subgraph
 from agentic_game.agent.graph.dialogue import build_dialogue_subgraph
 from agentic_game.agent.graph.exploration import build_exploration_subgraph
 from agentic_game.agent.graph.quest import build_quest_subgraph
+from agentic_game.agent.graph.skill_training import build_skill_training_subgraph
 from agentic_game.agent.graph.trade import build_trade_subgraph
 from agentic_game.agent.models import ParentNode, SubgraphName
 from agentic_game.agent.runtime.tools import ToolInvoker
@@ -19,6 +20,7 @@ from agentic_game.domain.craft import CraftPhase, CraftResult
 from agentic_game.domain.dialogue import DialoguePhase
 from agentic_game.domain.exploration import ExplorationPhase
 from agentic_game.domain.quest import QuestPhase
+from agentic_game.domain.skill_training import SkillTrainingPhase
 from agentic_game.domain.trade import TradePhase
 from agentic_game.flow.craft import answer_craft_result_question
 
@@ -260,6 +262,24 @@ def make_dialogue_wrapper(store: StorePort):
         state_namespace=("dialogue", "state"),
         initial_state={
             "phase": DialoguePhase.GREETING,
+            "latest_refs": {},
+            "history_refs": {},
+        },
+    )
+
+
+def make_skill_training_wrapper(store: StorePort):
+    """Create the parent node that invokes and persists the skill training subgraph."""
+    skill_training_graph = build_skill_training_subgraph()
+
+    return make_subgraph_wrapper(
+        store=store,
+        graph=skill_training_graph,
+        subgraph=SubgraphName.SKILL_TRAINING,
+        state_ref_key="skill_training_state",
+        state_namespace=("skill_training", "state"),
+        initial_state={
+            "phase": SkillTrainingPhase.SELECT_SKILL,
             "latest_refs": {},
             "history_refs": {},
         },

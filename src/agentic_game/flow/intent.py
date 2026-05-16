@@ -5,6 +5,7 @@ from agentic_game.domain.craft import CraftEvent, CraftPhase
 from agentic_game.domain.dialogue import DialogueEvent, DialoguePhase
 from agentic_game.domain.exploration import ExplorationEvent, ExplorationPhase
 from agentic_game.domain.quest import QuestEvent, QuestPhase
+from agentic_game.domain.skill_training import SkillTrainingEvent, SkillTrainingPhase
 from agentic_game.domain.trade import TradeEvent, TradePhase
 from agentic_game.flow.battle import serialize_battle_actions
 from agentic_game.flow.craft import serialize_craft_actions
@@ -12,6 +13,7 @@ from agentic_game.flow.dialogue import serialize_dialogue_actions
 from agentic_game.flow.exploration import serialize_exploration_actions
 from agentic_game.flow.models import SubgraphName
 from agentic_game.flow.quest import serialize_quest_actions
+from agentic_game.flow.skill_training import serialize_skill_training_actions
 from agentic_game.flow.trade import serialize_trade_actions
 
 
@@ -80,15 +82,29 @@ def infer_parent_subgraph(user_text: str) -> SubgraphName | None:
         "고마",
         "보상",
     )
+    skill_training_keywords = (
+        "skill",
+        "training",
+        "practice",
+        "스킬",
+        "훈련",
+        "연습",
+        "검술",
+        "연금술",
+        "레벨",
+    )
 
     if any(keyword in normalized_text for keyword in battle_keywords):
         return SubgraphName.BATTLE
 
-    if any(keyword in normalized_text for keyword in craft_keywords):
-        return SubgraphName.CRAFT
-
     if any(keyword in normalized_text for keyword in exploration_keywords):
         return SubgraphName.EXPLORATION
+
+    if any(keyword in normalized_text for keyword in skill_training_keywords):
+        return SubgraphName.SKILL_TRAINING
+
+    if any(keyword in normalized_text for keyword in craft_keywords):
+        return SubgraphName.CRAFT
 
     if any(keyword in normalized_text for keyword in quest_keywords):
         return SubgraphName.QUEST
@@ -231,6 +247,33 @@ def infer_dialogue_event(
         DialogueEvent.THANK: ("thank", "감사", "고마"),
         DialogueEvent.LEAVE: ("leave", "떠날", "종료", "그만"),
         DialogueEvent.CLAIM_REWARD: ("reward", "보상", "받을"),
+    }
+
+    for event, keywords in event_by_keywords.items():
+        if event.value in available_events and any(
+            keyword in normalized_text for keyword in keywords
+        ):
+            return event
+
+    return None
+
+
+def infer_skill_training_event(
+    phase: SkillTrainingPhase,
+    user_text: str,
+) -> SkillTrainingEvent | None:
+    """Infer a skill training event from explicit training keywords."""
+    available_events = {
+        action["event"] for action in serialize_skill_training_actions(phase)
+    }
+    normalized_text = user_text.lower()
+    event_by_keywords = {
+        SkillTrainingEvent.SELECT_SWORDSMANSHIP: ("sword", "검술"),
+        SkillTrainingEvent.SELECT_ALCHEMY: ("alchemy", "연금술"),
+        SkillTrainingEvent.PRACTICE: ("practice", "train", "훈련", "연습"),
+        SkillTrainingEvent.RETRY: ("retry", "다시"),
+        SkillTrainingEvent.LEVEL_UP: ("level", "레벨", "성장"),
+        SkillTrainingEvent.COMPLETE: ("complete", "완료", "마칠"),
     }
 
     for event, keywords in event_by_keywords.items():

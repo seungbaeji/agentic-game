@@ -17,6 +17,7 @@ from agentic_game.agent.runtime.subgraph import (
     make_dialogue_wrapper,
     make_exploration_wrapper,
     make_quest_wrapper,
+    make_skill_training_wrapper,
     make_trade_wrapper,
 )
 from agentic_game.agent.runtime.tools import ToolInvoker
@@ -75,6 +76,10 @@ def build_parent_graph(
     builder.add_node(
         ParentNode.DIALOGUE,
         make_dialogue_wrapper(store),
+    )
+    builder.add_node(
+        ParentNode.SKILL_TRAINING,
+        make_skill_training_wrapper(store),
     )
     builder.add_node(ParentNode.RESPONSE, make_parent_response_node(llm))
     builder.add_node(ParentNode.ASK_USER, parent_ask_user_node)
