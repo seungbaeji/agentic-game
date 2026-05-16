@@ -3,10 +3,12 @@ from __future__ import annotations
 from agentic_game.domain.battle import BattleEvent, BattlePhase
 from agentic_game.domain.craft import CraftEvent, CraftPhase
 from agentic_game.domain.exploration import ExplorationEvent, ExplorationPhase
+from agentic_game.domain.trade import TradeEvent, TradePhase
 from agentic_game.flow.battle import serialize_battle_actions
 from agentic_game.flow.craft import serialize_craft_actions
 from agentic_game.flow.exploration import serialize_exploration_actions
 from agentic_game.flow.models import SubgraphName
+from agentic_game.flow.trade import serialize_trade_actions
 
 
 def infer_parent_subgraph(user_text: str) -> SubgraphName | None:
@@ -34,6 +36,21 @@ def infer_parent_subgraph(user_text: str) -> SubgraphName | None:
         "숲길",
         "유적",
     )
+    trade_keywords = (
+        "trade",
+        "shop",
+        "merchant",
+        "buy",
+        "sell",
+        "거래",
+        "상점",
+        "상인",
+        "구매",
+        "판매",
+        "흥정",
+        "가격",
+        "수락",
+    )
 
     if any(keyword in normalized_text for keyword in battle_keywords):
         return SubgraphName.BATTLE
@@ -43,6 +60,9 @@ def infer_parent_subgraph(user_text: str) -> SubgraphName | None:
 
     if any(keyword in normalized_text for keyword in exploration_keywords):
         return SubgraphName.EXPLORATION
+
+    if any(keyword in normalized_text for keyword in trade_keywords):
+        return SubgraphName.TRADE
 
     return None
 
@@ -108,6 +128,28 @@ def infer_exploration_event(
         ExplorationEvent.INSPECT: ("inspect", "조사", "살펴"),
         ExplorationEvent.RETREAT: ("retreat", "후퇴", "돌아"),
         ExplorationEvent.COMPLETE: ("complete", "완료", "마칠"),
+    }
+
+    for event, keywords in event_by_keywords.items():
+        if event.value in available_events and any(
+            keyword in normalized_text for keyword in keywords
+        ):
+            return event
+
+    return None
+
+
+def infer_trade_event(phase: TradePhase, user_text: str) -> TradeEvent | None:
+    """Infer a trade event from explicit commerce keywords."""
+    available_events = {action["event"] for action in serialize_trade_actions(phase)}
+    normalized_text = user_text.lower()
+    event_by_keywords = {
+        TradeEvent.SELECT_ITEM: ("select", "item", "아이템", "고를", "선택"),
+        TradeEvent.OFFER: ("offer", "price", "제안", "가격", "흥정"),
+        TradeEvent.ACCEPT_PRICE: ("accept", "수락", "좋아", "구매"),
+        TradeEvent.DECLINE_PRICE: ("decline", "거절", "비싸", "다시"),
+        TradeEvent.CONFIRM: ("confirm", "확정", "교환", "완료"),
+        TradeEvent.CANCEL: ("cancel", "취소", "그만"),
     }
 
     for event, keywords in event_by_keywords.items():

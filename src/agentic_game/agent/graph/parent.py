@@ -15,6 +15,7 @@ from agentic_game.agent.runtime.subgraph import (
     make_battle_wrapper,
     make_craft_wrapper,
     make_exploration_wrapper,
+    make_trade_wrapper,
 )
 from agentic_game.agent.runtime.tools import ToolInvoker
 from agentic_game.agent.state import ParentState
@@ -60,6 +61,10 @@ def build_parent_graph(
     builder.add_node(
         ParentNode.EXPLORATION,
         make_exploration_wrapper(store),
+    )
+    builder.add_node(
+        ParentNode.TRADE,
+        make_trade_wrapper(store),
     )
     builder.add_node(ParentNode.RESPONSE, make_parent_response_node(llm))
     builder.add_node(ParentNode.ASK_USER, parent_ask_user_node)

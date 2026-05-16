@@ -8,6 +8,7 @@ PARENT_DECISION_EDGES = {
     ParentNode.BATTLE: ParentNode.BATTLE,
     ParentNode.CRAFT: ParentNode.CRAFT,
     ParentNode.EXPLORATION: ParentNode.EXPLORATION,
+    ParentNode.TRADE: ParentNode.TRADE,
     ParentNode.ASK_USER: ParentNode.ASK_USER,
 }
 
@@ -15,6 +16,7 @@ PARENT_DIRECT_EDGES = [
     (ParentNode.BATTLE, ParentNode.RESPONSE),
     (ParentNode.CRAFT, ParentNode.RESPONSE),
     (ParentNode.EXPLORATION, ParentNode.RESPONSE),
+    (ParentNode.TRADE, ParentNode.RESPONSE),
     (ParentNode.RESPONSE, END),
     (ParentNode.ASK_USER, END),
 ]

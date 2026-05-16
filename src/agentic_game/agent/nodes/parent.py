@@ -97,7 +97,7 @@ def describe_available_work() -> ResponseText:
     return (
         "지금은 이런 일을 할 수 있어요.\n"
         f"{descriptions}\n\n"
-        "예: `몬스터를 공격할게`, `포션을 제작할게`, `숲을 탐험할게`"
+        "예: `몬스터를 공격할게`, `포션을 제작할게`, `숲을 탐험할게`, `상인과 거래할게`"
     )
 
 

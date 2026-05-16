@@ -30,6 +30,7 @@ Choose one target_subgraph from available subgraphs.
 If user mentions fighting, monster, attack, choose battle.
 If user mentions crafting, item, potion, sword, choose craft.
 If user mentions exploring, forest, ruins, or 탐험, choose exploration.
+If user mentions trading, shop, merchant, or 거래, choose trade.
 """
 
 
