@@ -3,8 +3,9 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from agentic_game.agent.graph.scenario import (
+    ScenarioAdapter,
     ScenarioGraphNodes,
-    build_scenario_subgraph,
+    build_scenario_adapter_subgraph,
 )
 from agentic_game.agent.models import CraftNode
 from agentic_game.agent.nodes.craft import (
@@ -29,6 +30,32 @@ from agentic_game.application.ports import LLMPort, RandomPort, StorePort
 from agentic_game.domain.craft import CraftResult
 
 
+def make_craft_adapter(
+    *,
+    llm: LLMPort,
+    execute: Callable[[CraftState], CraftState],
+) -> ScenarioAdapter:
+    """Create the graph adapter for the craft scenario."""
+    return ScenarioAdapter(
+        state_schema=CraftState,
+        node_names=CraftNode,
+        graph_nodes=ScenarioGraphNodes(
+            decision=make_craft_decision_node(llm),
+            flow=craft_flow_node,
+            hitl=craft_hitl_node,
+            execute=execute,
+            response=make_craft_response_node(llm),
+            ask_user=craft_ask_user_node,
+        ),
+        route=craft_route,
+        flow_edges=CRAFT_FLOW_EDGES,
+        hitl_edges=CRAFT_HITL_EDGES,
+        direct_edges=CRAFT_DIRECT_EDGES,
+        decision_route=craft_decision_route,
+        decision_edges=CRAFT_DECISION_EDGES,
+    )
+
+
 def build_craft_subgraph(
     store: StorePort,
     llm: LLMPort,
@@ -47,21 +74,6 @@ def build_craft_subgraph(
             random=random,
         )
 
-    return build_scenario_subgraph(
-        state_schema=CraftState,
-        node_names=CraftNode,
-        graph_nodes=ScenarioGraphNodes(
-            decision=make_craft_decision_node(llm),
-            flow=craft_flow_node,
-            hitl=craft_hitl_node,
-            execute=execute_with_store,
-            response=make_craft_response_node(llm),
-            ask_user=craft_ask_user_node,
-        ),
-        route=craft_route,
-        flow_edges=CRAFT_FLOW_EDGES,
-        hitl_edges=CRAFT_HITL_EDGES,
-        direct_edges=CRAFT_DIRECT_EDGES,
-        decision_route=craft_decision_route,
-        decision_edges=CRAFT_DECISION_EDGES,
+    return build_scenario_adapter_subgraph(
+        make_craft_adapter(llm=llm, execute=execute_with_store)
     )

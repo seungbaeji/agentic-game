@@ -3,8 +3,9 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from agentic_game.agent.graph.scenario import (
+    ScenarioAdapter,
     ScenarioGraphNodes,
-    build_scenario_subgraph,
+    build_scenario_adapter_subgraph,
 )
 from agentic_game.agent.models import BattleNode
 from agentic_game.agent.nodes.battle import (
@@ -27,6 +28,30 @@ from agentic_game.application.ports import LLMPort, RandomPort, StorePort
 from agentic_game.domain.battle import BattleResult
 
 
+def make_battle_adapter(
+    *,
+    llm: LLMPort,
+    execute: Callable[[BattleState], BattleState],
+) -> ScenarioAdapter:
+    """Create the graph adapter for the battle scenario."""
+    return ScenarioAdapter(
+        state_schema=BattleState,
+        node_names=BattleNode,
+        graph_nodes=ScenarioGraphNodes(
+            decision=make_battle_decision_node(llm),
+            flow=battle_flow_node,
+            hitl=battle_hitl_node,
+            execute=execute,
+            response=make_battle_response_node(llm),
+            ask_user=battle_ask_user_node,
+        ),
+        route=battle_route,
+        flow_edges=BATTLE_FLOW_EDGES,
+        hitl_edges=BATTLE_HITL_EDGES,
+        direct_edges=BATTLE_DIRECT_EDGES,
+    )
+
+
 def build_battle_subgraph(
     store: StorePort,
     llm: LLMPort,
@@ -45,19 +70,6 @@ def build_battle_subgraph(
             random=random,
         )
 
-    return build_scenario_subgraph(
-        state_schema=BattleState,
-        node_names=BattleNode,
-        graph_nodes=ScenarioGraphNodes(
-            decision=make_battle_decision_node(llm),
-            flow=battle_flow_node,
-            hitl=battle_hitl_node,
-            execute=execute_with_store,
-            response=make_battle_response_node(llm),
-            ask_user=battle_ask_user_node,
-        ),
-        route=battle_route,
-        flow_edges=BATTLE_FLOW_EDGES,
-        hitl_edges=BATTLE_HITL_EDGES,
-        direct_edges=BATTLE_DIRECT_EDGES,
+    return build_scenario_adapter_subgraph(
+        make_battle_adapter(llm=llm, execute=execute_with_store)
     )

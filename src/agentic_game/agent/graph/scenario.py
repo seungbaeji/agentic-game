@@ -17,6 +17,19 @@ class ScenarioGraphNodes:
     ask_user: Callable[..., Any]
 
 
+@dataclass(frozen=True)
+class ScenarioAdapter:
+    state_schema: type[Any]
+    node_names: type[Any]
+    graph_nodes: ScenarioGraphNodes
+    route: Callable[[Any], Any]
+    flow_edges: Mapping[Any, Any]
+    hitl_edges: Mapping[Any, Any]
+    direct_edges: Sequence[tuple[Any, Any]]
+    decision_route: Callable[[Any], Any] | None = None
+    decision_edges: Mapping[Any, Any] | None = None
+
+
 def build_scenario_subgraph(
     *,
     state_schema: type[Any],
@@ -64,3 +77,18 @@ def build_scenario_subgraph(
         builder.add_edge(source, target)
 
     return builder.compile()
+
+
+def build_scenario_adapter_subgraph(adapter: ScenarioAdapter):
+    """Build a scenario subgraph from a scenario adapter."""
+    return build_scenario_subgraph(
+        state_schema=adapter.state_schema,
+        node_names=adapter.node_names,
+        graph_nodes=adapter.graph_nodes,
+        route=adapter.route,
+        flow_edges=adapter.flow_edges,
+        hitl_edges=adapter.hitl_edges,
+        direct_edges=adapter.direct_edges,
+        decision_route=adapter.decision_route,
+        decision_edges=adapter.decision_edges,
+    )
