@@ -9,7 +9,7 @@ from agentic_game.agent.graph.parent import build_parent_graph
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
 from agentic_game.application.usecases import craft_item, resolve_battle_action
 from agentic_game.config import Settings, get_settings
-from agentic_game.outbound.llm import GeminiLLMAdapter
+from agentic_game.outbound.llm import create_llm_adapter
 from agentic_game.outbound.random import RandomAdapter
 from agentic_game.outbound.store import LangGraphStoreAdapter
 from agentic_game.tools import craft_item_tool, resolve_battle_tool
@@ -36,7 +36,7 @@ def build_container(
     return AppContainer(
         settings=resolved_settings,
         store=store or LangGraphStoreAdapter(InMemoryStore()),
-        llm=llm or GeminiLLMAdapter(resolved_settings),
+        llm=llm or create_llm_adapter(resolved_settings),
         random=random or RandomAdapter(),
     )
 
