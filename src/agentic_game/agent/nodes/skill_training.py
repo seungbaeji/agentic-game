@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from agentic_game.agent.nodes.scenario import (
     make_ask_user_node,
+    make_decision_node,
     make_flow_node,
     make_hitl_node,
 )
@@ -12,31 +13,13 @@ from agentic_game.domain.skill_training import SkillTrainingPhase
 from agentic_game.flow.intent import infer_skill_training_event
 from agentic_game.flow.skill_training import serialize_skill_training_actions
 
-
-def skill_training_decision_node(
-    state: SkillTrainingState,
-) -> SkillTrainingState:
-    """Decide the next skill training event from deterministic intent."""
-    phase = state.get("phase", SkillTrainingPhase.SELECT_SKILL)
-    available_actions = serialize_skill_training_actions(phase)
-    user_text = state.get("human_input") or state.get("user_input", "")
-    inferred_event = infer_skill_training_event(phase, user_text)
-
-    if inferred_event is not None:
-        return {
-            "phase": phase,
-            "event": inferred_event,
-            "available_actions": available_actions,
-            "reason": "user_input에서 명시적인 스킬 훈련 행동을 감지했습니다.",
-            "next_node": ScenarioNode.FLOW,
-        }
-
-    return {
-        "phase": phase,
-        "available_actions": available_actions,
-        "reason": "훈련할 스킬 또는 행동 선택이 필요합니다.",
-        "next_node": ScenarioNode.ASK_USER,
-    }
+skill_training_decision_node = make_decision_node(
+    default_phase=SkillTrainingPhase.SELECT_SKILL,
+    serialize_actions=serialize_skill_training_actions,
+    infer_event=infer_skill_training_event,
+    inferred_reason="user_input에서 명시적인 스킬 훈련 행동을 감지했습니다.",
+    fallback_reason="훈련할 스킬 또는 행동 선택이 필요합니다.",
+)
 
 
 skill_training_flow_node = make_flow_node(

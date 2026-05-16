@@ -1,12 +1,58 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from agentic_game.agent.scenario import ScenarioNode, ScenarioSpec
 from agentic_game.flow.transitions import resolve_transition, serialize_actions
 
 type ScenarioState = dict[str, Any]
+
+
+def make_decision_node[PhaseT, EventT](
+    *,
+    default_phase: PhaseT,
+    serialize_actions: Callable[[PhaseT], Any],
+    infer_event: Callable[[PhaseT, str], EventT | None],
+    inferred_reason: str,
+    fallback_reason: str,
+    default_events: Mapping[PhaseT, tuple[EventT, str]] | None = None,
+) -> Callable[[ScenarioState], ScenarioState]:
+    """Create a deterministic decision node for simple scenarios."""
+
+    def decision_node(state: ScenarioState) -> ScenarioState:
+        phase = state.get("phase", default_phase)
+        available_actions = serialize_actions(phase)
+        user_text = state.get("human_input") or state.get("user_input", "")
+        inferred_event = infer_event(phase, user_text)
+
+        if inferred_event is not None:
+            return {
+                "phase": phase,
+                "event": inferred_event,
+                "available_actions": available_actions,
+                "reason": inferred_reason,
+                "next_node": ScenarioNode.FLOW,
+            }
+
+        if default_events is not None and phase in default_events:
+            event, reason = default_events[phase]
+            return {
+                "phase": phase,
+                "event": event,
+                "available_actions": available_actions,
+                "reason": reason,
+                "next_node": ScenarioNode.FLOW,
+            }
+
+        return {
+            "phase": phase,
+            "available_actions": available_actions,
+            "reason": fallback_reason,
+            "next_node": ScenarioNode.ASK_USER,
+        }
+
+    return decision_node
 
 
 def make_flow_node[PhaseT, EventT, NodeT](
