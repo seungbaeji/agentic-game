@@ -5,6 +5,7 @@ from typing import Protocol
 
 from agentic_game.agent.graph.battle import build_battle_subgraph
 from agentic_game.agent.graph.craft import build_craft_subgraph
+from agentic_game.agent.graph.exploration import build_exploration_subgraph
 from agentic_game.agent.models import ParentNode, SubgraphName
 from agentic_game.agent.runtime.tools import ToolInvoker
 from agentic_game.agent.state import CraftState, ParentState
@@ -12,6 +13,7 @@ from agentic_game.agent.types import RuntimePayload, StoreRefs
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
 from agentic_game.domain.battle import BattlePhase, BattleResult
 from agentic_game.domain.craft import CraftPhase, CraftResult
+from agentic_game.domain.exploration import ExplorationPhase
 from agentic_game.flow.craft import answer_craft_result_question
 
 
@@ -183,4 +185,22 @@ def make_craft_wrapper(
             "history_refs": {},
         },
         before_invoke=answer_followup,
+    )
+
+
+def make_exploration_wrapper(store: StorePort):
+    """Create the parent node that invokes and persists the exploration subgraph."""
+    exploration_graph = build_exploration_subgraph()
+
+    return make_subgraph_wrapper(
+        store=store,
+        graph=exploration_graph,
+        subgraph=SubgraphName.EXPLORATION,
+        state_ref_key="exploration_state",
+        state_namespace=("exploration", "state"),
+        initial_state={
+            "phase": ExplorationPhase.START,
+            "latest_refs": {},
+            "history_refs": {},
+        },
     )

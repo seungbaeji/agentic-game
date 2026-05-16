@@ -133,3 +133,35 @@ def test_agent_graph_continues_craft_after_recipe_selection() -> None:
     saved_state = container.store.get(namespace=("craft", "state"), key="latest")
     assert saved_state["latest_refs"]["result.raw"] == "store://craft/result/raw/latest"
     assert "next_node" not in saved_state
+
+
+def test_agent_graph_routes_exploration_and_keeps_context() -> None:
+    llm = TestingLLMAdapter()
+    container = build_container(
+        settings=Settings(_env_file=None),
+        llm=llm,
+        random=FixedRandom(d20=[]),
+    )
+    graph = build_agent_graph(container)
+
+    first = graph.invoke(
+        {
+            "user_input": "탐험하고 싶어",
+            "store_refs": {},
+        }
+    )
+    second = graph.invoke(
+        {
+            "user_input": "숲길로 갈래",
+            "store_refs": first["store_refs"],
+        }
+    )
+
+    assert first["response"] == "탐험 행동을 선택해 주세요. 가능한 선택: 숲길 / 유적 / 조사 / 후퇴"
+    assert second["response"] == "숲길에서 낯선 흔적을 발견했습니다. 조사하거나 후퇴할 수 있습니다."
+    assert "exploration_state" in second["store_refs"]
+
+    saved_state = container.store.get(namespace=("exploration", "state"), key="latest")
+    assert saved_state["phase"] == "encounter"
+    assert saved_state["event"] == "take_forest"
+    assert "next_node" not in saved_state

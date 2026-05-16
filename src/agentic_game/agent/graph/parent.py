@@ -11,7 +11,11 @@ from agentic_game.agent.nodes.parent import (
     parent_ask_user_node,
     parent_route,
 )
-from agentic_game.agent.runtime.subgraph import make_battle_wrapper, make_craft_wrapper
+from agentic_game.agent.runtime.subgraph import (
+    make_battle_wrapper,
+    make_craft_wrapper,
+    make_exploration_wrapper,
+)
 from agentic_game.agent.runtime.tools import ToolInvoker
 from agentic_game.agent.state import ParentState
 from agentic_game.agent.transitions import PARENT_DECISION_EDGES, PARENT_DIRECT_EDGES
@@ -52,6 +56,10 @@ def build_parent_graph(
             craft_item,
             random,
         ),
+    )
+    builder.add_node(
+        ParentNode.EXPLORATION,
+        make_exploration_wrapper(store),
     )
     builder.add_node(ParentNode.RESPONSE, make_parent_response_node(llm))
     builder.add_node(ParentNode.ASK_USER, parent_ask_user_node)
