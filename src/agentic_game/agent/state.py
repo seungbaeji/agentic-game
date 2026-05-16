@@ -24,6 +24,10 @@ from agentic_game.domain.craft import (
     CraftEvent,
     CraftPhase,
 )
+from agentic_game.domain.dialogue import (
+    DialogueEvent,
+    DialoguePhase,
+)
 from agentic_game.domain.exploration import (
     ExplorationEvent,
     ExplorationPhase,
@@ -119,6 +123,22 @@ class QuestState(TypedDict, total=False):
 
     phase: QuestPhase
     event: QuestEvent
+
+    latest_refs: StoreRefs
+    history_refs: HistoryRefs
+
+    available_actions: AvailableActions
+    response: ResponseText
+    reason: ReasonText
+    next_node: str
+
+
+class DialogueState(TypedDict, total=False):
+    user_input: UserInput
+    human_input: HumanInput
+
+    phase: DialoguePhase
+    event: DialogueEvent
 
     latest_refs: StoreRefs
     history_refs: HistoryRefs

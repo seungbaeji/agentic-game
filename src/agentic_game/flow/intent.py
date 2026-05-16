@@ -2,11 +2,13 @@ from __future__ import annotations
 
 from agentic_game.domain.battle import BattleEvent, BattlePhase
 from agentic_game.domain.craft import CraftEvent, CraftPhase
+from agentic_game.domain.dialogue import DialogueEvent, DialoguePhase
 from agentic_game.domain.exploration import ExplorationEvent, ExplorationPhase
 from agentic_game.domain.quest import QuestEvent, QuestPhase
 from agentic_game.domain.trade import TradeEvent, TradePhase
 from agentic_game.flow.battle import serialize_battle_actions
 from agentic_game.flow.craft import serialize_craft_actions
+from agentic_game.flow.dialogue import serialize_dialogue_actions
 from agentic_game.flow.exploration import serialize_exploration_actions
 from agentic_game.flow.models import SubgraphName
 from agentic_game.flow.quest import serialize_quest_actions
@@ -66,6 +68,18 @@ def infer_parent_subgraph(user_text: str) -> SubgraphName | None:
         "완료",
         "포기",
     )
+    dialogue_keywords = (
+        "dialogue",
+        "talk",
+        "npc",
+        "rumor",
+        "대화",
+        "말",
+        "소문",
+        "감사",
+        "고마",
+        "보상",
+    )
 
     if any(keyword in normalized_text for keyword in battle_keywords):
         return SubgraphName.BATTLE
@@ -78,6 +92,9 @@ def infer_parent_subgraph(user_text: str) -> SubgraphName | None:
 
     if any(keyword in normalized_text for keyword in quest_keywords):
         return SubgraphName.QUEST
+
+    if any(keyword in normalized_text for keyword in dialogue_keywords):
+        return SubgraphName.DIALOGUE
 
     if any(keyword in normalized_text for keyword in trade_keywords):
         return SubgraphName.TRADE
@@ -190,6 +207,30 @@ def infer_quest_event(phase: QuestPhase, user_text: str) -> QuestEvent | None:
         QuestEvent.COMPLETE: ("complete", "완료", "보고", "보상"),
         QuestEvent.ABANDON: ("abandon", "포기", "그만"),
         QuestEvent.FAIL: ("fail", "실패"),
+    }
+
+    for event, keywords in event_by_keywords.items():
+        if event.value in available_events and any(
+            keyword in normalized_text for keyword in keywords
+        ):
+            return event
+
+    return None
+
+
+def infer_dialogue_event(
+    phase: DialoguePhase,
+    user_text: str,
+) -> DialogueEvent | None:
+    """Infer a dialogue event from explicit NPC conversation keywords."""
+    available_events = {action["event"] for action in serialize_dialogue_actions(phase)}
+    normalized_text = user_text.lower()
+    event_by_keywords = {
+        DialogueEvent.ASK_RUMOR: ("rumor", "소문"),
+        DialogueEvent.ASK_TRADE: ("trade", "거래"),
+        DialogueEvent.THANK: ("thank", "감사", "고마"),
+        DialogueEvent.LEAVE: ("leave", "떠날", "종료", "그만"),
+        DialogueEvent.CLAIM_REWARD: ("reward", "보상", "받을"),
     }
 
     for event, keywords in event_by_keywords.items():

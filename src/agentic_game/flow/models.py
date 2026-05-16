@@ -11,6 +11,7 @@ class SubgraphName(StrEnum):
     EXPLORATION = "exploration"
     TRADE = "trade"
     QUEST = "quest"
+    DIALOGUE = "dialogue"
 
 
 class ActionSpec(TypedDict):

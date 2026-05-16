@@ -23,6 +23,7 @@ def test_parent_node_transitions_are_declared_as_tables() -> None:
         ParentNode.EXPLORATION: ParentNode.EXPLORATION,
         ParentNode.TRADE: ParentNode.TRADE,
         ParentNode.QUEST: ParentNode.QUEST,
+        ParentNode.DIALOGUE: ParentNode.DIALOGUE,
         ParentNode.ASK_USER: ParentNode.ASK_USER,
     }
     assert PARENT_DIRECT_EDGES == [
@@ -31,6 +32,7 @@ def test_parent_node_transitions_are_declared_as_tables() -> None:
         (ParentNode.EXPLORATION, ParentNode.RESPONSE),
         (ParentNode.TRADE, ParentNode.RESPONSE),
         (ParentNode.QUEST, ParentNode.RESPONSE),
+        (ParentNode.DIALOGUE, ParentNode.RESPONSE),
         (ParentNode.RESPONSE, END),
         (ParentNode.ASK_USER, END),
     ]
