@@ -108,13 +108,3 @@ def exploration_ask_user_node(state: ExplorationState) -> ExplorationState:
     return {
         "response": "탐험 행동을 선택해 주세요. 가능한 선택: 숲길 / 유적 / 조사 / 후퇴",
     }
-
-
-def exploration_route(state: ExplorationState) -> str:
-    """Read the next exploration node selected by the previous node."""
-    return state["next_node"]
-
-
-def exploration_decision_route(state: ExplorationState) -> str:
-    """Route after exploration decision, defaulting to the flow node."""
-    return state.get("next_node", ScenarioNode.FLOW)

@@ -4,15 +4,14 @@ from agentic_game.agent.graph.scenario import (
     ScenarioGraphNodes,
     build_simple_scenario_subgraph,
 )
+from agentic_game.agent.nodes.scenario import scenario_decision_route, scenario_route
 from agentic_game.agent.nodes.trade import (
     trade_ask_user_node,
     trade_decision_node,
-    trade_decision_route,
     trade_execute_node,
     trade_flow_node,
     trade_hitl_node,
     trade_response_node,
-    trade_route,
 )
 from agentic_game.agent.state import TradeState
 
@@ -29,6 +28,6 @@ def build_trade_subgraph():
             response=trade_response_node,
             ask_user=trade_ask_user_node,
         ),
-        route=trade_route,
-        decision_route=trade_decision_route,
+        route=scenario_route,
+        decision_route=scenario_decision_route,
     )

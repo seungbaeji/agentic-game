@@ -105,13 +105,3 @@ def trade_ask_user_node(state: TradeState) -> TradeState:
     return {
         "response": "거래 행동을 선택해 주세요. 가능한 선택: 가격 제안 / 수락 / 거절 / 취소",
     }
-
-
-def trade_route(state: TradeState) -> str:
-    """Read the next trade node selected by the previous node."""
-    return state["next_node"]
-
-
-def trade_decision_route(state: TradeState) -> str:
-    """Route after trade decision, defaulting to the flow node."""
-    return state.get("next_node", ScenarioNode.FLOW)

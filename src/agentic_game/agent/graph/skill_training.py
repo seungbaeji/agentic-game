@@ -4,15 +4,14 @@ from agentic_game.agent.graph.scenario import (
     ScenarioGraphNodes,
     build_simple_scenario_subgraph,
 )
+from agentic_game.agent.nodes.scenario import scenario_decision_route, scenario_route
 from agentic_game.agent.nodes.skill_training import (
     skill_training_ask_user_node,
     skill_training_decision_node,
-    skill_training_decision_route,
     skill_training_execute_node,
     skill_training_flow_node,
     skill_training_hitl_node,
     skill_training_response_node,
-    skill_training_route,
 )
 from agentic_game.agent.state import SkillTrainingState
 
@@ -29,6 +28,6 @@ def build_skill_training_subgraph():
             response=skill_training_response_node,
             ask_user=skill_training_ask_user_node,
         ),
-        route=skill_training_route,
-        decision_route=skill_training_decision_route,
+        route=scenario_route,
+        decision_route=scenario_decision_route,
     )

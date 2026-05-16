@@ -7,13 +7,12 @@ from agentic_game.agent.graph.scenario import (
 from agentic_game.agent.nodes.dialogue import (
     dialogue_ask_user_node,
     dialogue_decision_node,
-    dialogue_decision_route,
     dialogue_execute_node,
     dialogue_flow_node,
     dialogue_hitl_node,
     dialogue_response_node,
-    dialogue_route,
 )
+from agentic_game.agent.nodes.scenario import scenario_decision_route, scenario_route
 from agentic_game.agent.state import DialogueState
 
 
@@ -29,6 +28,6 @@ def build_dialogue_subgraph():
             response=dialogue_response_node,
             ask_user=dialogue_ask_user_node,
         ),
-        route=dialogue_route,
-        decision_route=dialogue_decision_route,
+        route=scenario_route,
+        decision_route=scenario_decision_route,
     )
