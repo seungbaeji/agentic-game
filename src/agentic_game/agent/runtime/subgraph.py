@@ -6,6 +6,7 @@ from typing import Protocol
 from agentic_game.agent.graph.battle import build_battle_subgraph
 from agentic_game.agent.graph.craft import build_craft_subgraph
 from agentic_game.agent.graph.exploration import build_exploration_subgraph
+from agentic_game.agent.graph.quest import build_quest_subgraph
 from agentic_game.agent.graph.trade import build_trade_subgraph
 from agentic_game.agent.models import ParentNode, SubgraphName
 from agentic_game.agent.runtime.tools import ToolInvoker
@@ -15,6 +16,7 @@ from agentic_game.application.ports import LLMPort, RandomPort, StorePort
 from agentic_game.domain.battle import BattlePhase, BattleResult
 from agentic_game.domain.craft import CraftPhase, CraftResult
 from agentic_game.domain.exploration import ExplorationPhase
+from agentic_game.domain.quest import QuestPhase
 from agentic_game.domain.trade import TradePhase
 from agentic_game.flow.craft import answer_craft_result_question
 
@@ -220,6 +222,24 @@ def make_trade_wrapper(store: StorePort):
         state_namespace=("trade", "state"),
         initial_state={
             "phase": TradePhase.BROWSE,
+            "latest_refs": {},
+            "history_refs": {},
+        },
+    )
+
+
+def make_quest_wrapper(store: StorePort):
+    """Create the parent node that invokes and persists the quest subgraph."""
+    quest_graph = build_quest_subgraph()
+
+    return make_subgraph_wrapper(
+        store=store,
+        graph=quest_graph,
+        subgraph=SubgraphName.QUEST,
+        state_ref_key="quest_state",
+        state_namespace=("quest", "state"),
+        initial_state={
+            "phase": QuestPhase.AVAILABLE,
             "latest_refs": {},
             "history_refs": {},
         },

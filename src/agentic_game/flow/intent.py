@@ -3,11 +3,13 @@ from __future__ import annotations
 from agentic_game.domain.battle import BattleEvent, BattlePhase
 from agentic_game.domain.craft import CraftEvent, CraftPhase
 from agentic_game.domain.exploration import ExplorationEvent, ExplorationPhase
+from agentic_game.domain.quest import QuestEvent, QuestPhase
 from agentic_game.domain.trade import TradeEvent, TradePhase
 from agentic_game.flow.battle import serialize_battle_actions
 from agentic_game.flow.craft import serialize_craft_actions
 from agentic_game.flow.exploration import serialize_exploration_actions
 from agentic_game.flow.models import SubgraphName
+from agentic_game.flow.quest import serialize_quest_actions
 from agentic_game.flow.trade import serialize_trade_actions
 
 
@@ -51,6 +53,19 @@ def infer_parent_subgraph(user_text: str) -> SubgraphName | None:
         "가격",
         "수락",
     )
+    quest_keywords = (
+        "quest",
+        "mission",
+        "퀘스트",
+        "임무",
+        "의뢰",
+        "진행",
+        "목표",
+        "달성",
+        "보고",
+        "완료",
+        "포기",
+    )
 
     if any(keyword in normalized_text for keyword in battle_keywords):
         return SubgraphName.BATTLE
@@ -60,6 +75,9 @@ def infer_parent_subgraph(user_text: str) -> SubgraphName | None:
 
     if any(keyword in normalized_text for keyword in exploration_keywords):
         return SubgraphName.EXPLORATION
+
+    if any(keyword in normalized_text for keyword in quest_keywords):
+        return SubgraphName.QUEST
 
     if any(keyword in normalized_text for keyword in trade_keywords):
         return SubgraphName.TRADE
@@ -150,6 +168,28 @@ def infer_trade_event(phase: TradePhase, user_text: str) -> TradeEvent | None:
         TradeEvent.DECLINE_PRICE: ("decline", "거절", "비싸", "다시"),
         TradeEvent.CONFIRM: ("confirm", "확정", "교환", "완료"),
         TradeEvent.CANCEL: ("cancel", "취소", "그만"),
+    }
+
+    for event, keywords in event_by_keywords.items():
+        if event.value in available_events and any(
+            keyword in normalized_text for keyword in keywords
+        ):
+            return event
+
+    return None
+
+
+def infer_quest_event(phase: QuestPhase, user_text: str) -> QuestEvent | None:
+    """Infer a quest event from explicit quest progress keywords."""
+    available_events = {action["event"] for action in serialize_quest_actions(phase)}
+    normalized_text = user_text.lower()
+    event_by_keywords = {
+        QuestEvent.ACCEPT: ("accept", "수락", "받을"),
+        QuestEvent.START: ("start", "시작", "출발"),
+        QuestEvent.PROGRESS: ("progress", "진행", "달성", "목표"),
+        QuestEvent.COMPLETE: ("complete", "완료", "보고", "보상"),
+        QuestEvent.ABANDON: ("abandon", "포기", "그만"),
+        QuestEvent.FAIL: ("fail", "실패"),
     }
 
     for event, keywords in event_by_keywords.items():

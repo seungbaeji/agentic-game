@@ -13,6 +13,7 @@ class ParentNode(StrEnum):
     CRAFT = "craft_subgraph"
     EXPLORATION = "exploration_subgraph"
     TRADE = "trade_subgraph"
+    QUEST = "quest_subgraph"
     RESPONSE = "parent_response"
     ASK_USER = "parent_ask_user"
 
@@ -67,5 +68,11 @@ SUBGRAPH_REGISTRY: dict[SubgraphName, SubgraphEntry] = {
         label="거래",
         description="아이템을 선택하고 가격 확인과 교환을 처리합니다.",
         node=ParentNode.TRADE,
+    ),
+    SubgraphName.QUEST: SubgraphEntry(
+        name=SubgraphName.QUEST,
+        label="퀘스트",
+        description="퀘스트 수락, 진행, 보고, 완료 또는 실패를 처리합니다.",
+        node=ParentNode.QUEST,
     ),
 }

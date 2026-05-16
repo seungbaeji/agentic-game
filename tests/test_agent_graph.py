@@ -204,3 +204,42 @@ def test_agent_graph_routes_trade_and_keeps_context_until_exchange() -> None:
     assert saved_state["phase"] == "exchange"
     assert saved_state["event"] == "accept_price"
     assert "next_node" not in saved_state
+
+
+def test_agent_graph_routes_quest_and_keeps_context_until_turn_in() -> None:
+    llm = TestingLLMAdapter()
+    container = build_container(
+        settings=Settings(_env_file=None),
+        llm=llm,
+        random=FixedRandom(d20=[]),
+    )
+    graph = build_agent_graph(container)
+
+    first = graph.invoke(
+        {
+            "user_input": "퀘스트를 수락하고 싶어",
+            "store_refs": {},
+        }
+    )
+    second = graph.invoke(
+        {
+            "user_input": "퀘스트를 시작할게",
+            "store_refs": first["store_refs"],
+        }
+    )
+    third = graph.invoke(
+        {
+            "user_input": "목표를 달성했어",
+            "store_refs": second["store_refs"],
+        }
+    )
+
+    assert first["response"] == "퀘스트 행동을 선택해 주세요. 가능한 선택: 시작 / 진행 / 완료 / 포기"
+    assert second["response"] == "퀘스트를 계속 진행합니다."
+    assert third["response"] == "퀘스트 목표를 달성했습니다. 보고하고 보상을 받을 수 있습니다."
+    assert "quest_state" in third["store_refs"]
+
+    saved_state = container.store.get(namespace=("quest", "state"), key="latest")
+    assert saved_state["phase"] == "turn_in"
+    assert saved_state["event"] == "progress"
+    assert "next_node" not in saved_state
