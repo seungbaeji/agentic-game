@@ -27,6 +27,14 @@ from agentic_game.application.ports import LLMPort, RandomPort, StorePort
 from agentic_game.domain.battle import BattleResult
 from agentic_game.domain.craft import CraftResult
 
+SIMPLE_PARENT_WRAPPERS = {
+    ParentNode.EXPLORATION: make_exploration_wrapper,
+    ParentNode.TRADE: make_trade_wrapper,
+    ParentNode.QUEST: make_quest_wrapper,
+    ParentNode.DIALOGUE: make_dialogue_wrapper,
+    ParentNode.SKILL_TRAINING: make_skill_training_wrapper,
+}
+
 
 def build_parent_graph(
     store: StorePort,
@@ -61,26 +69,9 @@ def build_parent_graph(
             random,
         ),
     )
-    builder.add_node(
-        ParentNode.EXPLORATION,
-        make_exploration_wrapper(store),
-    )
-    builder.add_node(
-        ParentNode.TRADE,
-        make_trade_wrapper(store),
-    )
-    builder.add_node(
-        ParentNode.QUEST,
-        make_quest_wrapper(store),
-    )
-    builder.add_node(
-        ParentNode.DIALOGUE,
-        make_dialogue_wrapper(store),
-    )
-    builder.add_node(
-        ParentNode.SKILL_TRAINING,
-        make_skill_training_wrapper(store),
-    )
+    for node, make_wrapper in SIMPLE_PARENT_WRAPPERS.items():
+        builder.add_node(node, make_wrapper(store))
+
     builder.add_node(ParentNode.RESPONSE, make_parent_response_node(llm))
     builder.add_node(ParentNode.ASK_USER, parent_ask_user_node)
 
