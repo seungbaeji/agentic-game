@@ -12,6 +12,7 @@ class SubgraphName(StrEnum):
     TRADE = "trade"
     QUEST = "quest"
     DIALOGUE = "dialogue"
+    SKILL_TRAINING = "skill_training"
 
 
 class ActionSpec(TypedDict):

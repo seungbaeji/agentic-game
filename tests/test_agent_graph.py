@@ -282,3 +282,42 @@ def test_agent_graph_routes_dialogue_and_keeps_context_until_reward() -> None:
     assert saved_state["phase"] == "reward"
     assert saved_state["event"] == "thank"
     assert "next_node" not in saved_state
+
+
+def test_agent_graph_routes_skill_training_and_keeps_context_until_level_up() -> None:
+    llm = TestingLLMAdapter()
+    container = build_container(
+        settings=Settings(_env_file=None),
+        llm=llm,
+        random=FixedRandom(d20=[]),
+    )
+    graph = build_agent_graph(container)
+
+    first = graph.invoke(
+        {
+            "user_input": "검술을 훈련하고 싶어",
+            "store_refs": {},
+        }
+    )
+    second = graph.invoke(
+        {
+            "user_input": "훈련할게",
+            "store_refs": first["store_refs"],
+        }
+    )
+    third = graph.invoke(
+        {
+            "user_input": "레벨 올릴게",
+            "store_refs": second["store_refs"],
+        }
+    )
+
+    assert first["response"] == "스킬이 선택되었습니다. 이제 훈련을 실행할 수 있습니다."
+    assert second["response"] == "훈련 성과를 확인했습니다. 레벨 상승을 선택할 수 있습니다."
+    assert third["response"] == "스킬 레벨이 상승했습니다."
+    assert "skill_training_state" in third["store_refs"]
+
+    saved_state = container.store.get(namespace=("skill_training", "state"), key="latest")
+    assert saved_state["phase"] == "level_up"
+    assert saved_state["event"] == "level_up"
+    assert "next_node" not in saved_state

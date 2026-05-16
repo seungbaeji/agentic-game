@@ -15,6 +15,7 @@ class ParentNode(StrEnum):
     TRADE = "trade_subgraph"
     QUEST = "quest_subgraph"
     DIALOGUE = "dialogue_subgraph"
+    SKILL_TRAINING = "skill_training_subgraph"
     RESPONSE = "parent_response"
     ASK_USER = "parent_ask_user"
 
@@ -81,5 +82,11 @@ SUBGRAPH_REGISTRY: dict[SubgraphName, SubgraphEntry] = {
         label="대화",
         description="NPC 대화 선택지, 반응, 보상 수령을 처리합니다.",
         node=ParentNode.DIALOGUE,
+    ),
+    SubgraphName.SKILL_TRAINING: SubgraphEntry(
+        name=SubgraphName.SKILL_TRAINING,
+        label="스킬 훈련",
+        description="스킬 선택, 훈련 실행, 레벨 상승을 처리합니다.",
+        node=ParentNode.SKILL_TRAINING,
     ),
 }

@@ -5,6 +5,7 @@ from agentic_game.domain.craft import CraftEvent, CraftPhase
 from agentic_game.domain.dialogue import DialogueEvent, DialoguePhase
 from agentic_game.domain.exploration import ExplorationEvent, ExplorationPhase
 from agentic_game.domain.quest import QuestEvent, QuestPhase
+from agentic_game.domain.skill_training import SkillTrainingEvent, SkillTrainingPhase
 from agentic_game.domain.trade import TradeEvent, TradePhase
 from agentic_game.flow.intent import (
     infer_battle_event,
@@ -13,6 +14,7 @@ from agentic_game.flow.intent import (
     infer_exploration_event,
     infer_parent_subgraph,
     infer_quest_event,
+    infer_skill_training_event,
     infer_trade_event,
     is_capability_question,
 )
@@ -74,6 +76,17 @@ def test_infer_dialogue_event_respects_available_phase_actions() -> None:
     assert infer_dialogue_event(DialoguePhase.GREETING, "소문을 물어볼게") is None
 
 
+def test_infer_skill_training_event_from_skill_selection() -> None:
+    assert (
+        infer_skill_training_event(SkillTrainingPhase.SELECT_SKILL, "검술을 훈련할게")
+        == SkillTrainingEvent.SELECT_SWORDSMANSHIP
+    )
+
+
+def test_infer_skill_training_event_respects_available_phase_actions() -> None:
+    assert infer_skill_training_event(SkillTrainingPhase.SELECT_SKILL, "레벨 올릴게") is None
+
+
 def test_infer_parent_subgraph_from_battle_intent() -> None:
     assert infer_parent_subgraph("몬스터를 공격할게") == SubgraphName.BATTLE
 
@@ -96,6 +109,10 @@ def test_infer_parent_subgraph_from_quest_intent() -> None:
 
 def test_infer_parent_subgraph_from_dialogue_intent() -> None:
     assert infer_parent_subgraph("NPC와 대화하고 싶어") == SubgraphName.DIALOGUE
+
+
+def test_infer_parent_subgraph_from_skill_training_intent() -> None:
+    assert infer_parent_subgraph("검술을 훈련하고 싶어") == SubgraphName.SKILL_TRAINING
 
 
 def test_infer_parent_subgraph_returns_none_for_capability_question() -> None:

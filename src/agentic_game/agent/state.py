@@ -36,6 +36,10 @@ from agentic_game.domain.quest import (
     QuestEvent,
     QuestPhase,
 )
+from agentic_game.domain.skill_training import (
+    SkillTrainingEvent,
+    SkillTrainingPhase,
+)
 from agentic_game.domain.trade import (
     TradeEvent,
     TradePhase,
@@ -139,6 +143,22 @@ class DialogueState(TypedDict, total=False):
 
     phase: DialoguePhase
     event: DialogueEvent
+
+    latest_refs: StoreRefs
+    history_refs: HistoryRefs
+
+    available_actions: AvailableActions
+    response: ResponseText
+    reason: ReasonText
+    next_node: str
+
+
+class SkillTrainingState(TypedDict, total=False):
+    user_input: UserInput
+    human_input: HumanInput
+
+    phase: SkillTrainingPhase
+    event: SkillTrainingEvent
 
     latest_refs: StoreRefs
     history_refs: HistoryRefs

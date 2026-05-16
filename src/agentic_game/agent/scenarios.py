@@ -93,7 +93,7 @@ SKILL_TRAINING_SCENARIO = ScenarioSpec[SkillTrainingPhase, SkillTrainingEvent](
     initial_phase=SkillTrainingPhase.SELECT_SKILL,
     transitions=SKILL_TRAINING_TRANSITIONS,
     phase_to_node={
-        SkillTrainingPhase.TRAIN: ScenarioNode.HITL,
+        SkillTrainingPhase.TRAIN: ScenarioNode.RESPONSE,
         SkillTrainingPhase.RESOLVE: ScenarioNode.EXECUTE,
         SkillTrainingPhase.LEVEL_UP: ScenarioNode.RESPONSE,
         SkillTrainingPhase.COMPLETE: ScenarioNode.RESPONSE,
