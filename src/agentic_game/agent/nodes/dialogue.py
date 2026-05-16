@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from agentic_game.agent.nodes.scenario import (
     make_ask_user_node,
+    make_decision_node,
     make_flow_node,
     make_hitl_node,
 )
@@ -12,38 +13,19 @@ from agentic_game.domain.dialogue import DialogueEvent, DialoguePhase
 from agentic_game.flow.dialogue import serialize_dialogue_actions
 from agentic_game.flow.intent import infer_dialogue_event
 
-
-def dialogue_decision_node(state: DialogueState) -> DialogueState:
-    """Decide the next dialogue event from deterministic intent."""
-    phase = state.get("phase", DialoguePhase.GREETING)
-    available_actions = serialize_dialogue_actions(phase)
-    user_text = state.get("human_input") or state.get("user_input", "")
-    inferred_event = infer_dialogue_event(phase, user_text)
-
-    if inferred_event is not None:
-        return {
-            "phase": phase,
-            "event": inferred_event,
-            "available_actions": available_actions,
-            "reason": "user_input에서 명시적인 대화 행동을 감지했습니다.",
-            "next_node": ScenarioNode.FLOW,
-        }
-
-    if phase == DialoguePhase.GREETING:
-        return {
-            "phase": phase,
-            "event": DialogueEvent.CONTINUE,
-            "available_actions": available_actions,
-            "reason": "NPC와 대화를 시작합니다.",
-            "next_node": ScenarioNode.FLOW,
-        }
-
-    return {
-        "phase": phase,
-        "available_actions": available_actions,
-        "reason": "대화 선택이 필요합니다.",
-        "next_node": ScenarioNode.ASK_USER,
-    }
+dialogue_decision_node = make_decision_node(
+    default_phase=DialoguePhase.GREETING,
+    serialize_actions=serialize_dialogue_actions,
+    infer_event=infer_dialogue_event,
+    inferred_reason="user_input에서 명시적인 대화 행동을 감지했습니다.",
+    fallback_reason="대화 선택이 필요합니다.",
+    default_events={
+        DialoguePhase.GREETING: (
+            DialogueEvent.CONTINUE,
+            "NPC와 대화를 시작합니다.",
+        ),
+    },
+)
 
 
 dialogue_flow_node = make_flow_node(

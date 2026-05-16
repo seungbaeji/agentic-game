@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from agentic_game.agent.nodes.scenario import (
     make_ask_user_node,
+    make_decision_node,
     make_flow_node,
     make_hitl_node,
 )
@@ -12,38 +13,16 @@ from agentic_game.domain.quest import QuestEvent, QuestPhase
 from agentic_game.flow.intent import infer_quest_event
 from agentic_game.flow.quest import serialize_quest_actions
 
-
-def quest_decision_node(state: QuestState) -> QuestState:
-    """Decide the next quest event from deterministic intent."""
-    phase = state.get("phase", QuestPhase.AVAILABLE)
-    available_actions = serialize_quest_actions(phase)
-    user_text = state.get("human_input") or state.get("user_input", "")
-    inferred_event = infer_quest_event(phase, user_text)
-
-    if inferred_event is not None:
-        return {
-            "phase": phase,
-            "event": inferred_event,
-            "available_actions": available_actions,
-            "reason": "user_input에서 명시적인 퀘스트 행동을 감지했습니다.",
-            "next_node": ScenarioNode.FLOW,
-        }
-
-    if phase == QuestPhase.AVAILABLE:
-        return {
-            "phase": phase,
-            "event": QuestEvent.ACCEPT,
-            "available_actions": available_actions,
-            "reason": "퀘스트를 수락합니다.",
-            "next_node": ScenarioNode.FLOW,
-        }
-
-    return {
-        "phase": phase,
-        "available_actions": available_actions,
-        "reason": "퀘스트 행동 선택이 필요합니다.",
-        "next_node": ScenarioNode.ASK_USER,
-    }
+quest_decision_node = make_decision_node(
+    default_phase=QuestPhase.AVAILABLE,
+    serialize_actions=serialize_quest_actions,
+    infer_event=infer_quest_event,
+    inferred_reason="user_input에서 명시적인 퀘스트 행동을 감지했습니다.",
+    fallback_reason="퀘스트 행동 선택이 필요합니다.",
+    default_events={
+        QuestPhase.AVAILABLE: (QuestEvent.ACCEPT, "퀘스트를 수락합니다."),
+    },
+)
 
 
 quest_flow_node = make_flow_node(
