@@ -2,8 +2,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from langgraph.graph import StateGraph
-
+from agentic_game.agent.graph.scenario import (
+    ScenarioGraphNodes,
+    build_scenario_subgraph,
+)
 from agentic_game.agent.models import CraftNode
 from agentic_game.agent.nodes.craft import (
     craft_ask_user_node,
@@ -35,12 +37,6 @@ def build_craft_subgraph(
     random: RandomPort,
 ):
     """Build the LangGraph subgraph that runs the craft workflow."""
-    builder = StateGraph(CraftState)
-
-    builder.add_node(CraftNode.DECISION, make_craft_decision_node(llm))
-    builder.add_node(CraftNode.FLOW, craft_flow_node)
-    builder.add_node(CraftNode.HITL, craft_hitl_node)
-
     def execute_with_store(state: CraftState) -> CraftState:
         """Execute the craft tool with dependencies closed over from bootstrap."""
         return craft_execute_tool_node(
@@ -51,30 +47,21 @@ def build_craft_subgraph(
             random=random,
         )
 
-    builder.add_node(CraftNode.EXECUTE, execute_with_store)
-    builder.add_node(CraftNode.RESPONSE, make_craft_response_node(llm))
-    builder.add_node(CraftNode.ASK_USER, craft_ask_user_node)
-
-    builder.set_entry_point(CraftNode.DECISION)
-    builder.add_conditional_edges(
-        CraftNode.DECISION,
-        craft_decision_route,
-        CRAFT_DECISION_EDGES,
+    return build_scenario_subgraph(
+        state_schema=CraftState,
+        node_names=CraftNode,
+        graph_nodes=ScenarioGraphNodes(
+            decision=make_craft_decision_node(llm),
+            flow=craft_flow_node,
+            hitl=craft_hitl_node,
+            execute=execute_with_store,
+            response=make_craft_response_node(llm),
+            ask_user=craft_ask_user_node,
+        ),
+        route=craft_route,
+        flow_edges=CRAFT_FLOW_EDGES,
+        hitl_edges=CRAFT_HITL_EDGES,
+        direct_edges=CRAFT_DIRECT_EDGES,
+        decision_route=craft_decision_route,
+        decision_edges=CRAFT_DECISION_EDGES,
     )
-
-    builder.add_conditional_edges(
-        CraftNode.FLOW,
-        craft_route,
-        CRAFT_FLOW_EDGES,
-    )
-
-    builder.add_conditional_edges(
-        CraftNode.HITL,
-        craft_route,
-        CRAFT_HITL_EDGES,
-    )
-
-    for source, target in CRAFT_DIRECT_EDGES:
-        builder.add_edge(source, target)
-
-    return builder.compile()
