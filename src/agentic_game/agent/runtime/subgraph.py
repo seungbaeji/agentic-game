@@ -5,6 +5,7 @@ from typing import Protocol
 
 from agentic_game.agent.graph.battle import build_battle_subgraph
 from agentic_game.agent.graph.craft import build_craft_subgraph
+from agentic_game.agent.graph.dialogue import build_dialogue_subgraph
 from agentic_game.agent.graph.exploration import build_exploration_subgraph
 from agentic_game.agent.graph.quest import build_quest_subgraph
 from agentic_game.agent.graph.trade import build_trade_subgraph
@@ -15,6 +16,7 @@ from agentic_game.agent.types import RuntimePayload, StoreRefs
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
 from agentic_game.domain.battle import BattlePhase, BattleResult
 from agentic_game.domain.craft import CraftPhase, CraftResult
+from agentic_game.domain.dialogue import DialoguePhase
 from agentic_game.domain.exploration import ExplorationPhase
 from agentic_game.domain.quest import QuestPhase
 from agentic_game.domain.trade import TradePhase
@@ -240,6 +242,24 @@ def make_quest_wrapper(store: StorePort):
         state_namespace=("quest", "state"),
         initial_state={
             "phase": QuestPhase.AVAILABLE,
+            "latest_refs": {},
+            "history_refs": {},
+        },
+    )
+
+
+def make_dialogue_wrapper(store: StorePort):
+    """Create the parent node that invokes and persists the dialogue subgraph."""
+    dialogue_graph = build_dialogue_subgraph()
+
+    return make_subgraph_wrapper(
+        store=store,
+        graph=dialogue_graph,
+        subgraph=SubgraphName.DIALOGUE,
+        state_ref_key="dialogue_state",
+        state_namespace=("dialogue", "state"),
+        initial_state={
+            "phase": DialoguePhase.GREETING,
             "latest_refs": {},
             "history_refs": {},
         },

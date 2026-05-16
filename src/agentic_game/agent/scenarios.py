@@ -83,7 +83,7 @@ DIALOGUE_SCENARIO = ScenarioSpec[DialoguePhase, DialogueEvent](
     phase_to_node={
         DialoguePhase.CHOICE: ScenarioNode.HITL,
         DialoguePhase.REACT: ScenarioNode.RESPONSE,
-        DialoguePhase.REWARD: ScenarioNode.HITL,
+        DialoguePhase.REWARD: ScenarioNode.RESPONSE,
         DialoguePhase.END: ScenarioNode.RESPONSE,
     },
 )

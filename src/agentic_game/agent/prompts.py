@@ -32,6 +32,7 @@ If user mentions crafting, item, potion, sword, choose craft.
 If user mentions exploring, forest, ruins, or 탐험, choose exploration.
 If user mentions trading, shop, merchant, or 거래, choose trade.
 If user mentions quest, mission, or 퀘스트, choose quest.
+If user mentions dialogue, NPC, rumor, or 대화, choose dialogue.
 """
 
 

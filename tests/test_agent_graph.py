@@ -243,3 +243,42 @@ def test_agent_graph_routes_quest_and_keeps_context_until_turn_in() -> None:
     assert saved_state["phase"] == "turn_in"
     assert saved_state["event"] == "progress"
     assert "next_node" not in saved_state
+
+
+def test_agent_graph_routes_dialogue_and_keeps_context_until_reward() -> None:
+    llm = TestingLLMAdapter()
+    container = build_container(
+        settings=Settings(_env_file=None),
+        llm=llm,
+        random=FixedRandom(d20=[]),
+    )
+    graph = build_agent_graph(container)
+
+    first = graph.invoke(
+        {
+            "user_input": "NPC와 대화하고 싶어",
+            "store_refs": {},
+        }
+    )
+    second = graph.invoke(
+        {
+            "user_input": "소문을 물어볼게",
+            "store_refs": first["store_refs"],
+        }
+    )
+    third = graph.invoke(
+        {
+            "user_input": "고마워",
+            "store_refs": second["store_refs"],
+        }
+    )
+
+    assert first["response"] == "대화 선택지를 골라 주세요. 가능한 선택: 소문 묻기 / 거래 묻기 / 감사 / 보상 / 떠나기"
+    assert second["response"] == "NPC가 오래된 유적에 대한 소문을 들려줬습니다."
+    assert third["response"] == "NPC가 감사의 표시로 작은 보상을 준비했습니다."
+    assert "dialogue_state" in third["store_refs"]
+
+    saved_state = container.store.get(namespace=("dialogue", "state"), key="latest")
+    assert saved_state["phase"] == "reward"
+    assert saved_state["event"] == "thank"
+    assert "next_node" not in saved_state

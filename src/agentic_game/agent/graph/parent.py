@@ -14,6 +14,7 @@ from agentic_game.agent.nodes.parent import (
 from agentic_game.agent.runtime.subgraph import (
     make_battle_wrapper,
     make_craft_wrapper,
+    make_dialogue_wrapper,
     make_exploration_wrapper,
     make_quest_wrapper,
     make_trade_wrapper,
@@ -70,6 +71,10 @@ def build_parent_graph(
     builder.add_node(
         ParentNode.QUEST,
         make_quest_wrapper(store),
+    )
+    builder.add_node(
+        ParentNode.DIALOGUE,
+        make_dialogue_wrapper(store),
     )
     builder.add_node(ParentNode.RESPONSE, make_parent_response_node(llm))
     builder.add_node(ParentNode.ASK_USER, parent_ask_user_node)
