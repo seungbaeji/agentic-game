@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from agentic_game.agent.nodes.scenario import make_flow_node
+from agentic_game.agent.nodes.scenario import (
+    make_ask_user_node,
+    make_flow_node,
+    make_hitl_node,
+)
 from agentic_game.agent.scenario import ScenarioNode
 from agentic_game.agent.scenarios import TRADE_SCENARIO
 from agentic_game.agent.state import TradeState
@@ -48,21 +52,11 @@ trade_flow_node = make_flow_node(
     invalid_event_message="현재 거래 phase에서 허용되지 않은 event입니다.",
 )
 
-
-def trade_hitl_node(state: TradeState) -> TradeState:
-    """Ask for trade input when the graph cannot continue alone."""
-    phase = state.get("phase", TradePhase.NEGOTIATE)
-    human_input = state.get("human_input", "")
-
-    if infer_trade_event(phase, human_input) is None:
-        return {
-            "response": "거래 행동을 선택해 주세요. 가능한 선택: 가격 제안 / 수락 / 거절 / 취소",
-            "next_node": ScenarioNode.ASK_USER,
-        }
-
-    return {
-        "next_node": ScenarioNode.DECISION,
-    }
+trade_hitl_node = make_hitl_node(
+    default_phase=TradePhase.NEGOTIATE,
+    infer_event=infer_trade_event,
+    prompt="거래 행동을 선택해 주세요. 가능한 선택: 가격 제안 / 수락 / 거절 / 취소",
+)
 
 
 def trade_execute_node(state: TradeState) -> TradeState:
@@ -100,8 +94,6 @@ def trade_response_node(state: TradeState) -> TradeState:
     }
 
 
-def trade_ask_user_node(state: TradeState) -> TradeState:
-    """Return a user-facing prompt for trade choices."""
-    return {
-        "response": "거래 행동을 선택해 주세요. 가능한 선택: 가격 제안 / 수락 / 거절 / 취소",
-    }
+trade_ask_user_node = make_ask_user_node(
+    "거래 행동을 선택해 주세요. 가능한 선택: 가격 제안 / 수락 / 거절 / 취소"
+)

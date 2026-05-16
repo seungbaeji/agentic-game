@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from agentic_game.agent.nodes.scenario import make_flow_node
+from agentic_game.agent.nodes.scenario import (
+    make_ask_user_node,
+    make_flow_node,
+    make_hitl_node,
+)
 from agentic_game.agent.scenario import ScenarioNode
 from agentic_game.agent.scenarios import SKILL_TRAINING_SCENARIO
 from agentic_game.agent.state import SkillTrainingState
@@ -41,23 +45,11 @@ skill_training_flow_node = make_flow_node(
     invalid_event_message="현재 스킬 훈련 phase에서 허용되지 않은 event입니다.",
 )
 
-
-def skill_training_hitl_node(
-    state: SkillTrainingState,
-) -> SkillTrainingState:
-    """Ask for skill training input when the graph cannot continue alone."""
-    phase = state.get("phase", SkillTrainingPhase.SELECT_SKILL)
-    human_input = state.get("human_input", "")
-
-    if infer_skill_training_event(phase, human_input) is None:
-        return {
-            "response": "훈련 행동을 선택해 주세요. 가능한 선택: 검술 / 연금술 / 훈련 / 레벨 상승",
-            "next_node": ScenarioNode.ASK_USER,
-        }
-
-    return {
-        "next_node": ScenarioNode.DECISION,
-    }
+skill_training_hitl_node = make_hitl_node(
+    default_phase=SkillTrainingPhase.SELECT_SKILL,
+    infer_event=infer_skill_training_event,
+    prompt="훈련 행동을 선택해 주세요. 가능한 선택: 검술 / 연금술 / 훈련 / 레벨 상승",
+)
 
 
 def skill_training_execute_node(
@@ -100,10 +92,6 @@ def skill_training_response_node(
     }
 
 
-def skill_training_ask_user_node(
-    state: SkillTrainingState,
-) -> SkillTrainingState:
-    """Return a user-facing prompt for skill training choices."""
-    return {
-        "response": "훈련 행동을 선택해 주세요. 가능한 선택: 검술 / 연금술 / 훈련 / 레벨 상승",
-    }
+skill_training_ask_user_node = make_ask_user_node(
+    "훈련 행동을 선택해 주세요. 가능한 선택: 검술 / 연금술 / 훈련 / 레벨 상승"
+)

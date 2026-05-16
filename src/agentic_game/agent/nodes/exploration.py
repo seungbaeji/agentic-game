@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from agentic_game.agent.nodes.scenario import make_flow_node
+from agentic_game.agent.nodes.scenario import (
+    make_ask_user_node,
+    make_flow_node,
+    make_hitl_node,
+)
 from agentic_game.agent.scenario import ScenarioNode
 from agentic_game.agent.scenarios import EXPLORATION_SCENARIO
 from agentic_game.agent.state import ExplorationState
@@ -48,21 +52,11 @@ exploration_flow_node = make_flow_node(
     invalid_event_message="현재 탐험 phase에서 허용되지 않은 event입니다.",
 )
 
-
-def exploration_hitl_node(state: ExplorationState) -> ExplorationState:
-    """Ask for exploration input when the graph cannot continue alone."""
-    phase = state.get("phase", ExplorationPhase.CHOOSE_PATH)
-    human_input = state.get("human_input", "")
-
-    if infer_exploration_event(phase, human_input) is None:
-        return {
-            "response": "탐험 경로를 선택해 주세요. 가능한 선택: 숲길 / 유적",
-            "next_node": ScenarioNode.ASK_USER,
-        }
-
-    return {
-        "next_node": ScenarioNode.DECISION,
-    }
+exploration_hitl_node = make_hitl_node(
+    default_phase=ExplorationPhase.CHOOSE_PATH,
+    infer_event=infer_exploration_event,
+    prompt="탐험 경로를 선택해 주세요. 가능한 선택: 숲길 / 유적",
+)
 
 
 def exploration_execute_node(state: ExplorationState) -> ExplorationState:
@@ -103,8 +97,6 @@ def exploration_response_node(state: ExplorationState) -> ExplorationState:
     }
 
 
-def exploration_ask_user_node(state: ExplorationState) -> ExplorationState:
-    """Return a user-facing prompt for exploration choices."""
-    return {
-        "response": "탐험 행동을 선택해 주세요. 가능한 선택: 숲길 / 유적 / 조사 / 후퇴",
-    }
+exploration_ask_user_node = make_ask_user_node(
+    "탐험 행동을 선택해 주세요. 가능한 선택: 숲길 / 유적 / 조사 / 후퇴"
+)
