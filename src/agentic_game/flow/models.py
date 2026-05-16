@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import dataclass
 from enum import StrEnum
 from typing import TypedDict
 
@@ -16,3 +17,12 @@ class ActionSpec(TypedDict):
 
 
 type AvailableActions = list[ActionSpec]
+
+
+@dataclass(frozen=True)
+class TransitionRule[PhaseT, EventT]:
+    from_phase: PhaseT
+    on_event: EventT
+    to_phase: PhaseT
+    label: str
+    description: str

@@ -1,67 +1,61 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Any
 
 from agentic_game.domain.craft import CraftEvent, CraftPhase
-from agentic_game.flow.models import AvailableActions
+from agentic_game.flow.models import AvailableActions, TransitionRule
+from agentic_game.flow.transitions import resolve_transition, serialize_actions
 
 type LatestCraftResult = dict[str, Any]
 
 
-@dataclass(frozen=True)
-class CraftTransitionRule:
-    from_phase: CraftPhase
-    on_event: CraftEvent
-    to_phase: CraftPhase
-    label: str
-    description: str
+type CraftTransitionRule = TransitionRule[CraftPhase, CraftEvent]
 
 
 CRAFT_TRANSITIONS: list[CraftTransitionRule] = [
-    CraftTransitionRule(
+    TransitionRule(
         CraftPhase.SELECT_RECIPE,
         CraftEvent.CONTINUE,
         CraftPhase.CRAFT,
         "제작 단계로 이동",
         "제작할 아이템을 선택합니다.",
     ),
-    CraftTransitionRule(
+    TransitionRule(
         CraftPhase.SELECT_RECIPE,
         CraftEvent.CRAFT_POTION,
         CraftPhase.RESULT,
         "포션 제작",
         "제작을 시작하고 곧바로 회복 포션 제작을 시도합니다.",
     ),
-    CraftTransitionRule(
+    TransitionRule(
         CraftPhase.SELECT_RECIPE,
         CraftEvent.CRAFT_SWORD,
         CraftPhase.RESULT,
         "검 제작",
         "제작을 시작하고 곧바로 낡은 검 제작을 시도합니다.",
     ),
-    CraftTransitionRule(
+    TransitionRule(
         CraftPhase.CRAFT,
         CraftEvent.CRAFT_POTION,
         CraftPhase.RESULT,
         "포션 제작",
         "회복 포션 제작을 시도합니다.",
     ),
-    CraftTransitionRule(
+    TransitionRule(
         CraftPhase.CRAFT,
         CraftEvent.CRAFT_SWORD,
         CraftPhase.RESULT,
         "검 제작",
         "낡은 검 제작을 시도합니다.",
     ),
-    CraftTransitionRule(
+    TransitionRule(
         CraftPhase.RESULT,
         CraftEvent.RETRY,
         CraftPhase.CRAFT,
         "다시 제작",
         "제작 결과를 보고 다시 제작합니다.",
     ),
-    CraftTransitionRule(
+    TransitionRule(
         CraftPhase.RESULT,
         CraftEvent.COMPLETE,
         CraftPhase.COMPLETE,
@@ -73,15 +67,7 @@ CRAFT_TRANSITIONS: list[CraftTransitionRule] = [
 
 def serialize_craft_actions(phase: CraftPhase) -> AvailableActions:
     """Return user-facing craft actions available in the current phase."""
-    return [
-        {
-            "event": rule.on_event.value,
-            "label": rule.label,
-            "description": rule.description,
-        }
-        for rule in CRAFT_TRANSITIONS
-        if rule.from_phase == phase
-    ]
+    return serialize_actions(CRAFT_TRANSITIONS, phase)
 
 
 def resolve_craft_transition(
@@ -89,10 +75,7 @@ def resolve_craft_transition(
     event: CraftEvent,
 ) -> CraftTransitionRule | None:
     """Find the craft transition rule for the given phase and event."""
-    for rule in CRAFT_TRANSITIONS:
-        if rule.from_phase == phase and rule.on_event == event:
-            return rule
-    return None
+    return resolve_transition(CRAFT_TRANSITIONS, phase, event)
 
 
 def answer_craft_result_question(
