@@ -8,6 +8,7 @@ from typing import TypedDict
 class SubgraphName(StrEnum):
     BATTLE = "battle"
     CRAFT = "craft"
+    EXPLORATION = "exploration"
 
 
 class ActionSpec(TypedDict):

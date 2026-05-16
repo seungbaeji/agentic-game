@@ -11,6 +11,7 @@ class ParentNode(StrEnum):
     NAVIGATE = "parent_navigate"
     BATTLE = "battle_subgraph"
     CRAFT = "craft_subgraph"
+    EXPLORATION = "exploration_subgraph"
     RESPONSE = "parent_response"
     ASK_USER = "parent_ask_user"
 
@@ -53,5 +54,11 @@ SUBGRAPH_REGISTRY: dict[SubgraphName, SubgraphEntry] = {
         label="제작",
         description="아이템 제작을 시도하고 랜덤 성공/실패를 처리합니다.",
         node=ParentNode.CRAFT,
+    ),
+    SubgraphName.EXPLORATION: SubgraphEntry(
+        name=SubgraphName.EXPLORATION,
+        label="탐험",
+        description="갈림길을 선택하고 조우나 발견을 처리합니다.",
+        node=ParentNode.EXPLORATION,
     ),
 }

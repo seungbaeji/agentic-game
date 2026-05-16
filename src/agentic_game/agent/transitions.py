@@ -7,12 +7,14 @@ from agentic_game.agent.models import BattleNode, CraftNode, ParentNode
 PARENT_DECISION_EDGES = {
     ParentNode.BATTLE: ParentNode.BATTLE,
     ParentNode.CRAFT: ParentNode.CRAFT,
+    ParentNode.EXPLORATION: ParentNode.EXPLORATION,
     ParentNode.ASK_USER: ParentNode.ASK_USER,
 }
 
 PARENT_DIRECT_EDGES = [
     (ParentNode.BATTLE, ParentNode.RESPONSE),
     (ParentNode.CRAFT, ParentNode.RESPONSE),
+    (ParentNode.EXPLORATION, ParentNode.RESPONSE),
     (ParentNode.RESPONSE, END),
     (ParentNode.ASK_USER, END),
 ]

@@ -24,6 +24,10 @@ from agentic_game.domain.craft import (
     CraftEvent,
     CraftPhase,
 )
+from agentic_game.domain.exploration import (
+    ExplorationEvent,
+    ExplorationPhase,
+)
 from agentic_game.flow.models import AvailableActions
 
 
@@ -67,3 +71,19 @@ class CraftState(TypedDict, total=False):
     response: ResponseText
     reason: ReasonText
     next_node: CraftNode
+
+
+class ExplorationState(TypedDict, total=False):
+    user_input: UserInput
+    human_input: HumanInput
+
+    phase: ExplorationPhase
+    event: ExplorationEvent
+
+    latest_refs: StoreRefs
+    history_refs: HistoryRefs
+
+    available_actions: AvailableActions
+    response: ResponseText
+    reason: ReasonText
+    next_node: str
