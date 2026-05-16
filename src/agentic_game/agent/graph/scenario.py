@@ -4,7 +4,9 @@ from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
 
-from langgraph.graph import StateGraph
+from langgraph.graph import END, StateGraph
+
+from agentic_game.agent.scenario import ScenarioNode
 
 
 @dataclass(frozen=True)
@@ -91,4 +93,51 @@ def build_scenario_adapter_subgraph(adapter: ScenarioAdapter):
         direct_edges=adapter.direct_edges,
         decision_route=adapter.decision_route,
         decision_edges=adapter.decision_edges,
+    )
+
+
+SIMPLE_SCENARIO_DECISION_EDGES = {
+    ScenarioNode.FLOW: ScenarioNode.FLOW,
+    ScenarioNode.ASK_USER: ScenarioNode.ASK_USER,
+}
+
+SIMPLE_SCENARIO_FLOW_EDGES = {
+    ScenarioNode.HITL: ScenarioNode.HITL,
+    ScenarioNode.EXECUTE: ScenarioNode.EXECUTE,
+    ScenarioNode.RESPONSE: ScenarioNode.RESPONSE,
+    ScenarioNode.ASK_USER: ScenarioNode.ASK_USER,
+}
+
+SIMPLE_SCENARIO_HITL_EDGES = {
+    ScenarioNode.DECISION: ScenarioNode.DECISION,
+    ScenarioNode.ASK_USER: ScenarioNode.ASK_USER,
+}
+
+SIMPLE_SCENARIO_DIRECT_EDGES = [
+    (ScenarioNode.EXECUTE, ScenarioNode.RESPONSE),
+    (ScenarioNode.RESPONSE, END),
+    (ScenarioNode.ASK_USER, END),
+]
+
+
+def build_simple_scenario_subgraph(
+    *,
+    state_schema: type[Any],
+    graph_nodes: ScenarioGraphNodes,
+    route: Callable[[Any], Any],
+    decision_route: Callable[[Any], Any],
+):
+    """Build a subgraph for scenarios that use the standard ScenarioNode shape."""
+    return build_scenario_adapter_subgraph(
+        ScenarioAdapter(
+            state_schema=state_schema,
+            node_names=ScenarioNode,
+            graph_nodes=graph_nodes,
+            route=route,
+            flow_edges=SIMPLE_SCENARIO_FLOW_EDGES,
+            hitl_edges=SIMPLE_SCENARIO_HITL_EDGES,
+            direct_edges=SIMPLE_SCENARIO_DIRECT_EDGES,
+            decision_route=decision_route,
+            decision_edges=SIMPLE_SCENARIO_DECISION_EDGES,
+        )
     )
