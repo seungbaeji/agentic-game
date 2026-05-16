@@ -1,1 +1,125 @@
 # agentic-game
+
+LangGraph 기반 전투/제작 샘플 에이전트입니다.
+
+이 프로젝트는 hexagonal architecture를 바탕으로 구성되어 있습니다. 도메인 규칙, 애플리케이션 usecase, LangGraph agent runtime, inbound interface, outbound adapter를 분리해서 CLI뿐 아니라 REST API나 UI에서도 같은 usecase와 agent 구성을 재사용할 수 있게 만드는 것이 목표입니다.
+
+## 문서
+
+- [아키텍처](docs/architecture.md): 폴더 구조, 역할/책임/경계, 의존성 방향, 확장 지점
+- [노드 전이와 Flow](docs/node-flow.md): parent/battle/craft graph의 node 전이, domain flow 적용 방식, state 저장 흐름
+
+MkDocs로 문서를 볼 수 있습니다.
+
+```bash
+uv run --group docs agentic-game-docs serve
+```
+
+## 구조 요약
+
+```text
+src/agentic_game/
+  domain/       # 순수 비즈니스 데이터와 규칙
+  flow/         # usecase 이전의 업무 흐름 규칙과 phase/event transition
+  application/  # usecase와 port
+  agent/        # LangGraph graph, node, runtime, prompt, routing
+  tools/        # LLM이 호출할 @tool 계층
+  inbound/      # CLI, 향후 REST API/UI 같은 interface
+  outbound/     # LLM, store, random 등 외부 adapter
+  config/       # pydantic-settings 기반 설정
+  errors/       # application-level custom exception
+```
+
+## 노드 전이와 Flow 요약
+
+이 프로젝트는 “업무 흐름”과 “LangGraph 실행 흐름”을 분리합니다.
+
+전투를 예로 들면, `공격한다`는 업무 event이고 `전투 결과를 계산해야 한다`는 다음 업무 phase입니다. 하지만 LangGraph 입장에서는 그 다음에 어떤 node를 실행할지가 필요합니다. 그래서 전이는 한 번에 처리하지 않고 아래 순서로 나눕니다.
+
+```text
+사용자 입력
+  -> decision node
+       사용자의 의도를 event로 결정합니다.
+       예: "몬스터를 공격할게" -> BattleEvent.ATTACK
+
+  -> flow
+       현재 phase와 event를 보고 다음 업무 phase를 계산합니다.
+       예: BattlePhase.PREPARE + BattleEvent.ATTACK -> BattlePhase.RESOLVE
+
+  -> routing
+       업무 phase를 실행해야 할 LangGraph node로 바꿉니다.
+       예: BattlePhase.RESOLVE -> BattleNode.EXECUTE
+
+  -> transitions table
+       LangGraph가 이동 가능한 node edge를 선언합니다.
+       예: BattleNode.FLOW -> BattleNode.EXECUTE
+```
+
+각 파일의 책임은 다음과 같습니다.
+
+- `flow/`: 업무 규칙을 정의합니다. `PREPARE + ATTACK -> RESOLVE`처럼 phase/event 전이를 다루며 LangGraph node를 모릅니다.
+- `agent/routing.py`: 업무 phase를 LangGraph node로 변환합니다. `RESOLVE -> EXECUTE`, `ACTION -> HITL` 같은 runtime 결정을 둡니다.
+- `agent/transitions.py`: LangGraph node 간 edge table입니다. `FLOW -> EXECUTE | HITL | RESPONSE`처럼 graph가 실제로 이동할 수 있는 경로를 선언합니다.
+- `agent/graph/`: `StateGraph`를 만들고 node와 edge table을 조립합니다. node 내부 로직은 알지 않습니다.
+- `agent/nodes/`: LangGraph가 호출하는 얇은 실행 단위입니다. state를 읽고 decision/flow/runtime에 위임한 뒤 다음 state update를 반환합니다.
+
+예를 들어 전투에서 `몬스터를 공격할게`를 입력하면 다음처럼 흐릅니다.
+
+```text
+1. parent decision
+   입력이 전투 의도라고 판단하고 battle subgraph로 보냅니다.
+
+2. battle decision
+   입력에서 공격 의도를 찾아 BattleEvent.ATTACK을 선택합니다.
+
+3. battle flow
+   현재 phase가 PREPARE이고 event가 ATTACK이므로 다음 phase를 RESOLVE로 바꿉니다.
+
+4. routing
+   RESOLVE phase는 실제 전투 결과를 계산해야 하므로 BattleNode.EXECUTE로 보냅니다.
+
+5. execute tool
+   battle usecase를 실행하고 raw/llm/ui 결과를 store에 저장합니다.
+
+6. response
+   저장된 실행 결과를 사용자에게 보여줄 응답으로 반환합니다.
+```
+
+자세한 내용은 [노드 전이와 Flow](docs/node-flow.md)를 참고하세요.
+
+## 실행
+
+```bash
+uv sync
+export LLM__API_KEY="..."
+uv run agentic-game
+```
+
+CLI에서 메시지를 입력하면 에이전트가 응답합니다. `exit`, `quit`, `q`, `종료`를 입력하면 종료됩니다.
+
+`.env` 파일로도 설정할 수 있습니다.
+
+```dotenv
+LLM__PROVIDER=google
+LLM__API_KEY=...
+LLM__MODEL=gemini-2.5-flash
+LLM__TEMPERATURE=0
+LLM__TIMEOUT_SECONDS=30
+LLM__MAX_RETRIES=2
+UI__APP_NAME=agentic-game
+```
+
+OpenAI를 사용할 때는 provider와 model을 바꿉니다.
+
+```dotenv
+LLM__PROVIDER=openai
+LLM__API_KEY=...
+LLM__MODEL=gpt-4.1-mini
+```
+
+## 개발 검증
+
+```bash
+uv run ruff check src tests
+uv run pytest
+```

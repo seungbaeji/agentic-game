@@ -1,0 +1,26 @@
+site_name: agentic-game
+site_description: LangGraph 기반 전투/제작 샘플 에이전트
+repo_url: https://github.com/seungbaeji/agentic-game
+
+theme:
+  name: material
+  language: ko
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+
+nav:
+  - Home: index.md
+  - Architecture: architecture.md
+  - Node Flow And Transitions: node-flow.md
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.highlight
+  - pymdownx.superfences
+  - pymdownx.details
+  - pymdownx.inlinehilite

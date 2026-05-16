@@ -1,0 +1,38 @@
+# agentic-game
+
+`agentic-game`은 LangGraph 기반 전투/제작 샘플 에이전트입니다.
+
+이 문서는 코드 구조를 빠르게 파악하고, graph node 전이와 business flow가 어떻게 연결되는지 이해하기 위한 가이드입니다.
+
+## 문서 구성
+
+- [Architecture](architecture.md): 폴더 구조, 역할/책임/경계, 의존성 방향, 확장 지점
+- [Node Flow And Transitions](node-flow.md): parent/battle/craft graph의 node 전이와 flow 적용 방식
+
+## 핵심 구조
+
+```text
+src/agentic_game/
+  domain/       # 순수 비즈니스 데이터와 규칙
+  flow/         # 업무 phase/event transition
+  application/  # usecase와 port
+  agent/        # LangGraph graph, node, runtime
+  tools/        # LLM tool layer
+  inbound/      # CLI, REST API, UI 같은 interface
+  outbound/     # LLM, store, random adapter
+  config/       # pydantic-settings 기반 설정
+  errors/       # application-level custom exception
+```
+
+## 실행
+
+```bash
+uv sync
+uv run agentic-game
+```
+
+문서 서버는 다음 명령으로 실행합니다.
+
+```bash
+uv run --group docs agentic-game-docs serve
+```
