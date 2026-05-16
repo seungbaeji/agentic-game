@@ -1,6 +1,10 @@
 from __future__ import annotations
 
-from agentic_game.agent.nodes.scenario import make_flow_node
+from agentic_game.agent.nodes.scenario import (
+    make_ask_user_node,
+    make_flow_node,
+    make_hitl_node,
+)
 from agentic_game.agent.scenario import ScenarioNode
 from agentic_game.agent.scenarios import DIALOGUE_SCENARIO
 from agentic_game.agent.state import DialogueState
@@ -48,21 +52,11 @@ dialogue_flow_node = make_flow_node(
     invalid_event_message="현재 대화 phase에서 허용되지 않은 event입니다.",
 )
 
-
-def dialogue_hitl_node(state: DialogueState) -> DialogueState:
-    """Ask for dialogue input when the graph cannot continue alone."""
-    phase = state.get("phase", DialoguePhase.CHOICE)
-    human_input = state.get("human_input", "")
-
-    if infer_dialogue_event(phase, human_input) is None:
-        return {
-            "response": "대화 선택지를 골라 주세요. 가능한 선택: 소문 묻기 / 거래 묻기 / 떠나기",
-            "next_node": ScenarioNode.ASK_USER,
-        }
-
-    return {
-        "next_node": ScenarioNode.DECISION,
-    }
+dialogue_hitl_node = make_hitl_node(
+    default_phase=DialoguePhase.CHOICE,
+    infer_event=infer_dialogue_event,
+    prompt="대화 선택지를 골라 주세요. 가능한 선택: 소문 묻기 / 거래 묻기 / 떠나기",
+)
 
 
 def dialogue_execute_node(state: DialogueState) -> DialogueState:
@@ -105,8 +99,6 @@ def dialogue_response_node(state: DialogueState) -> DialogueState:
     }
 
 
-def dialogue_ask_user_node(state: DialogueState) -> DialogueState:
-    """Return a user-facing prompt for dialogue choices."""
-    return {
-        "response": "대화 선택지를 골라 주세요. 가능한 선택: 소문 묻기 / 거래 묻기 / 감사 / 보상 / 떠나기",
-    }
+dialogue_ask_user_node = make_ask_user_node(
+    "대화 선택지를 골라 주세요. 가능한 선택: 소문 묻기 / 거래 묻기 / 감사 / 보상 / 떠나기"
+)

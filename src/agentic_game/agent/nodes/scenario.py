@@ -40,6 +40,42 @@ def make_flow_node[PhaseT, EventT, NodeT](
     return flow_node
 
 
+def make_hitl_node[PhaseT, EventT](
+    *,
+    default_phase: PhaseT,
+    infer_event: Callable[[PhaseT, str], EventT | None],
+    prompt: str,
+) -> Callable[[ScenarioState], ScenarioState]:
+    """Create a HITL node that asks for input until an event can be inferred."""
+
+    def hitl_node(state: ScenarioState) -> ScenarioState:
+        phase = state.get("phase", default_phase)
+        human_input = state.get("human_input", "")
+
+        if infer_event(phase, human_input) is None:
+            return {
+                "response": prompt,
+                "next_node": ScenarioNode.ASK_USER,
+            }
+
+        return {
+            "next_node": ScenarioNode.DECISION,
+        }
+
+    return hitl_node
+
+
+def make_ask_user_node(prompt: str) -> Callable[[ScenarioState], ScenarioState]:
+    """Create an ask-user node that returns a static scenario prompt."""
+
+    def ask_user_node(state: ScenarioState) -> ScenarioState:
+        return {
+            "response": prompt,
+        }
+
+    return ask_user_node
+
+
 def scenario_route(state: ScenarioState) -> str:
     """Read the next scenario node selected by the previous node."""
     return state["next_node"]
