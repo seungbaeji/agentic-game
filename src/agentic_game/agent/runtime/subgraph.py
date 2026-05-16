@@ -114,6 +114,29 @@ def make_subgraph_wrapper(
     return subgraph_node
 
 
+def make_simple_subgraph_wrapper(
+    *,
+    store: StorePort,
+    graph: InvokableGraph,
+    subgraph: SubgraphName,
+    initial_phase: object,
+):
+    """Create a wrapper for a scenario with standard state persistence keys."""
+    subgraph_name = subgraph.value
+    return make_subgraph_wrapper(
+        store=store,
+        graph=graph,
+        subgraph=subgraph,
+        state_ref_key=f"{subgraph_name}_state",
+        state_namespace=(subgraph_name, "state"),
+        initial_state={
+            "phase": initial_phase,
+            "latest_refs": {},
+            "history_refs": {},
+        },
+    )
+
+
 def make_battle_wrapper(
     store: StorePort,
     llm: LLMPort,
@@ -198,89 +221,49 @@ def make_craft_wrapper(
 
 def make_exploration_wrapper(store: StorePort):
     """Create the parent node that invokes and persists the exploration subgraph."""
-    exploration_graph = build_exploration_subgraph()
-
-    return make_subgraph_wrapper(
+    return make_simple_subgraph_wrapper(
         store=store,
-        graph=exploration_graph,
+        graph=build_exploration_subgraph(),
         subgraph=SubgraphName.EXPLORATION,
-        state_ref_key="exploration_state",
-        state_namespace=("exploration", "state"),
-        initial_state={
-            "phase": ExplorationPhase.START,
-            "latest_refs": {},
-            "history_refs": {},
-        },
+        initial_phase=ExplorationPhase.START,
     )
 
 
 def make_trade_wrapper(store: StorePort):
     """Create the parent node that invokes and persists the trade subgraph."""
-    trade_graph = build_trade_subgraph()
-
-    return make_subgraph_wrapper(
+    return make_simple_subgraph_wrapper(
         store=store,
-        graph=trade_graph,
+        graph=build_trade_subgraph(),
         subgraph=SubgraphName.TRADE,
-        state_ref_key="trade_state",
-        state_namespace=("trade", "state"),
-        initial_state={
-            "phase": TradePhase.BROWSE,
-            "latest_refs": {},
-            "history_refs": {},
-        },
+        initial_phase=TradePhase.BROWSE,
     )
 
 
 def make_quest_wrapper(store: StorePort):
     """Create the parent node that invokes and persists the quest subgraph."""
-    quest_graph = build_quest_subgraph()
-
-    return make_subgraph_wrapper(
+    return make_simple_subgraph_wrapper(
         store=store,
-        graph=quest_graph,
+        graph=build_quest_subgraph(),
         subgraph=SubgraphName.QUEST,
-        state_ref_key="quest_state",
-        state_namespace=("quest", "state"),
-        initial_state={
-            "phase": QuestPhase.AVAILABLE,
-            "latest_refs": {},
-            "history_refs": {},
-        },
+        initial_phase=QuestPhase.AVAILABLE,
     )
 
 
 def make_dialogue_wrapper(store: StorePort):
     """Create the parent node that invokes and persists the dialogue subgraph."""
-    dialogue_graph = build_dialogue_subgraph()
-
-    return make_subgraph_wrapper(
+    return make_simple_subgraph_wrapper(
         store=store,
-        graph=dialogue_graph,
+        graph=build_dialogue_subgraph(),
         subgraph=SubgraphName.DIALOGUE,
-        state_ref_key="dialogue_state",
-        state_namespace=("dialogue", "state"),
-        initial_state={
-            "phase": DialoguePhase.GREETING,
-            "latest_refs": {},
-            "history_refs": {},
-        },
+        initial_phase=DialoguePhase.GREETING,
     )
 
 
 def make_skill_training_wrapper(store: StorePort):
     """Create the parent node that invokes and persists the skill training subgraph."""
-    skill_training_graph = build_skill_training_subgraph()
-
-    return make_subgraph_wrapper(
+    return make_simple_subgraph_wrapper(
         store=store,
-        graph=skill_training_graph,
+        graph=build_skill_training_subgraph(),
         subgraph=SubgraphName.SKILL_TRAINING,
-        state_ref_key="skill_training_state",
-        state_namespace=("skill_training", "state"),
-        initial_state={
-            "phase": SkillTrainingPhase.SELECT_SKILL,
-            "latest_refs": {},
-            "history_refs": {},
-        },
+        initial_phase=SkillTrainingPhase.SELECT_SKILL,
     )
