@@ -28,6 +28,10 @@ from agentic_game.domain.exploration import (
     ExplorationEvent,
     ExplorationPhase,
 )
+from agentic_game.domain.trade import (
+    TradeEvent,
+    TradePhase,
+)
 from agentic_game.flow.models import AvailableActions
 
 
@@ -79,6 +83,22 @@ class ExplorationState(TypedDict, total=False):
 
     phase: ExplorationPhase
     event: ExplorationEvent
+
+    latest_refs: StoreRefs
+    history_refs: HistoryRefs
+
+    available_actions: AvailableActions
+    response: ResponseText
+    reason: ReasonText
+    next_node: str
+
+
+class TradeState(TypedDict, total=False):
+    user_input: UserInput
+    human_input: HumanInput
+
+    phase: TradePhase
+    event: TradeEvent
 
     latest_refs: StoreRefs
     history_refs: HistoryRefs

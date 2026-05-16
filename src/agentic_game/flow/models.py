@@ -9,6 +9,7 @@ class SubgraphName(StrEnum):
     BATTLE = "battle"
     CRAFT = "craft"
     EXPLORATION = "exploration"
+    TRADE = "trade"
 
 
 class ActionSpec(TypedDict):

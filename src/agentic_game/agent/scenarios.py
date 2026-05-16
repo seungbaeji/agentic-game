@@ -69,7 +69,7 @@ TRADE_SCENARIO = ScenarioSpec[TradePhase, TradeEvent](
     transitions=TRADE_TRANSITIONS,
     phase_to_node={
         TradePhase.NEGOTIATE: ScenarioNode.HITL,
-        TradePhase.CONFIRM: ScenarioNode.HITL,
+        TradePhase.CONFIRM: ScenarioNode.RESPONSE,
         TradePhase.EXCHANGE: ScenarioNode.EXECUTE,
         TradePhase.COMPLETE: ScenarioNode.RESPONSE,
         TradePhase.CANCELLED: ScenarioNode.RESPONSE,
