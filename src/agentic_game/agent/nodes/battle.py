@@ -4,20 +4,27 @@ from collections.abc import Callable
 
 from agentic_game.agent.decisions import BattleDecision
 from agentic_game.agent.models import BattleNode
+from agentic_game.agent.nodes.scenario import make_flow_node
 from agentic_game.agent.prompts import (
     build_battle_decision_prompt,
     build_battle_response_prompt,
 )
-from agentic_game.agent.routing import battle_node_after_phase
+from agentic_game.agent.routing import battle_node_for_scenario_node
 from agentic_game.agent.runtime.tools import ToolInvoker, execute_battle_tool
+from agentic_game.agent.scenarios import BATTLE_SCENARIO
 from agentic_game.agent.state import BattleState
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
 from agentic_game.domain.battle import BattlePhase, BattleResult
 from agentic_game.flow.battle import (
-    resolve_battle_transition,
     serialize_battle_actions,
 )
 from agentic_game.flow.intent import infer_battle_event
+
+_battle_flow_node = make_flow_node(
+    spec=BATTLE_SCENARIO,
+    node_for=battle_node_for_scenario_node,
+    invalid_event_message="현재 전투 phase에서 허용되지 않은 event입니다.",
+)
 
 
 def make_battle_decision_node(llm: LLMPort):
@@ -61,23 +68,7 @@ def make_battle_decision_node(llm: LLMPort):
 
 def battle_flow_node(state: BattleState) -> BattleState:
     """Advance battle phase according to the selected event."""
-    phase = state["phase"]
-    event = state["event"]
-    rule = resolve_battle_transition(phase, event)
-
-    if rule is None:
-        return {
-            "reason": "현재 전투 phase에서 허용되지 않은 event입니다.",
-            "next_node": BattleNode.ASK_USER,
-        }
-
-    next_phase = rule.to_phase
-
-    return {
-        "phase": next_phase,
-        "available_actions": serialize_battle_actions(next_phase),
-        "next_node": battle_node_after_phase(next_phase),
-    }
+    return _battle_flow_node(state)
 
 
 def battle_hitl_node(state: BattleState) -> BattleState:

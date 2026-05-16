@@ -4,20 +4,27 @@ from collections.abc import Callable
 
 from agentic_game.agent.decisions import CraftDecision
 from agentic_game.agent.models import CraftNode
+from agentic_game.agent.nodes.scenario import make_flow_node
 from agentic_game.agent.prompts import (
     build_craft_decision_prompt,
     build_craft_response_prompt,
 )
-from agentic_game.agent.routing import craft_node_after_phase
+from agentic_game.agent.routing import craft_node_for_scenario_node
 from agentic_game.agent.runtime.tools import ToolInvoker, execute_craft_tool
+from agentic_game.agent.scenarios import CRAFT_SCENARIO
 from agentic_game.agent.state import CraftState
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
 from agentic_game.domain.craft import CraftEvent, CraftPhase, CraftResult
 from agentic_game.flow.craft import (
-    resolve_craft_transition,
     serialize_craft_actions,
 )
 from agentic_game.flow.intent import infer_craft_event
+
+_craft_flow_node = make_flow_node(
+    spec=CRAFT_SCENARIO,
+    node_for=craft_node_for_scenario_node,
+    invalid_event_message="현재 제작 phase에서 허용되지 않은 event입니다.",
+)
 
 
 def make_craft_decision_node(llm: LLMPort):
@@ -78,23 +85,7 @@ def make_craft_decision_node(llm: LLMPort):
 
 def craft_flow_node(state: CraftState) -> CraftState:
     """Advance craft phase according to the selected event."""
-    phase = state["phase"]
-    event = state["event"]
-    rule = resolve_craft_transition(phase, event)
-
-    if rule is None:
-        return {
-            "reason": "현재 제작 phase에서 허용되지 않은 event입니다.",
-            "next_node": CraftNode.ASK_USER,
-        }
-
-    next_phase = rule.to_phase
-
-    return {
-        "phase": next_phase,
-        "available_actions": serialize_craft_actions(next_phase),
-        "next_node": craft_node_after_phase(next_phase),
-    }
+    return _craft_flow_node(state)
 
 
 def craft_hitl_node(state: CraftState) -> CraftState:
