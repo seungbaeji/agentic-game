@@ -115,13 +115,3 @@ def quest_ask_user_node(state: QuestState) -> QuestState:
     return {
         "response": "퀘스트 행동을 선택해 주세요. 가능한 선택: 시작 / 진행 / 완료 / 포기",
     }
-
-
-def quest_route(state: QuestState) -> str:
-    """Read the next quest node selected by the previous node."""
-    return state["next_node"]
-
-
-def quest_decision_route(state: QuestState) -> str:
-    """Route after quest decision, defaulting to the flow node."""
-    return state.get("next_node", ScenarioNode.FLOW)

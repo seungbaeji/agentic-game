@@ -7,13 +7,12 @@ from agentic_game.agent.graph.scenario import (
 from agentic_game.agent.nodes.quest import (
     quest_ask_user_node,
     quest_decision_node,
-    quest_decision_route,
     quest_execute_node,
     quest_flow_node,
     quest_hitl_node,
     quest_response_node,
-    quest_route,
 )
+from agentic_game.agent.nodes.scenario import scenario_decision_route, scenario_route
 from agentic_game.agent.state import QuestState
 
 
@@ -29,6 +28,6 @@ def build_quest_subgraph():
             response=quest_response_node,
             ask_user=quest_ask_user_node,
         ),
-        route=quest_route,
-        decision_route=quest_decision_route,
+        route=scenario_route,
+        decision_route=scenario_decision_route,
     )

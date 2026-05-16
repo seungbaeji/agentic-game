@@ -38,3 +38,13 @@ def make_flow_node[PhaseT, EventT, NodeT](
         }
 
     return flow_node
+
+
+def scenario_route(state: ScenarioState) -> str:
+    """Read the next scenario node selected by the previous node."""
+    return state["next_node"]
+
+
+def scenario_decision_route(state: ScenarioState) -> str:
+    """Route after a scenario decision, defaulting to the flow node."""
+    return state.get("next_node", ScenarioNode.FLOW)

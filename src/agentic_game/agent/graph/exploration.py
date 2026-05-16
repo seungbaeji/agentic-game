@@ -7,13 +7,12 @@ from agentic_game.agent.graph.scenario import (
 from agentic_game.agent.nodes.exploration import (
     exploration_ask_user_node,
     exploration_decision_node,
-    exploration_decision_route,
     exploration_execute_node,
     exploration_flow_node,
     exploration_hitl_node,
     exploration_response_node,
-    exploration_route,
 )
+from agentic_game.agent.nodes.scenario import scenario_decision_route, scenario_route
 from agentic_game.agent.state import ExplorationState
 
 
@@ -29,6 +28,6 @@ def build_exploration_subgraph():
             response=exploration_response_node,
             ask_user=exploration_ask_user_node,
         ),
-        route=exploration_route,
-        decision_route=exploration_decision_route,
+        route=scenario_route,
+        decision_route=scenario_decision_route,
     )

@@ -107,13 +107,3 @@ def skill_training_ask_user_node(
     return {
         "response": "훈련 행동을 선택해 주세요. 가능한 선택: 검술 / 연금술 / 훈련 / 레벨 상승",
     }
-
-
-def skill_training_route(state: SkillTrainingState) -> str:
-    """Read the next skill training node selected by the previous node."""
-    return state["next_node"]
-
-
-def skill_training_decision_route(state: SkillTrainingState) -> str:
-    """Route after skill training decision, defaulting to the flow node."""
-    return state.get("next_node", ScenarioNode.FLOW)

@@ -110,13 +110,3 @@ def dialogue_ask_user_node(state: DialogueState) -> DialogueState:
     return {
         "response": "대화 선택지를 골라 주세요. 가능한 선택: 소문 묻기 / 거래 묻기 / 감사 / 보상 / 떠나기",
     }
-
-
-def dialogue_route(state: DialogueState) -> str:
-    """Read the next dialogue node selected by the previous node."""
-    return state["next_node"]
-
-
-def dialogue_decision_route(state: DialogueState) -> str:
-    """Route after dialogue decision, defaulting to the flow node."""
-    return state.get("next_node", ScenarioNode.FLOW)
