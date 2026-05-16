@@ -28,6 +28,10 @@ from agentic_game.domain.exploration import (
     ExplorationEvent,
     ExplorationPhase,
 )
+from agentic_game.domain.quest import (
+    QuestEvent,
+    QuestPhase,
+)
 from agentic_game.domain.trade import (
     TradeEvent,
     TradePhase,
@@ -99,6 +103,22 @@ class TradeState(TypedDict, total=False):
 
     phase: TradePhase
     event: TradeEvent
+
+    latest_refs: StoreRefs
+    history_refs: HistoryRefs
+
+    available_actions: AvailableActions
+    response: ResponseText
+    reason: ReasonText
+    next_node: str
+
+
+class QuestState(TypedDict, total=False):
+    user_input: UserInput
+    human_input: HumanInput
+
+    phase: QuestPhase
+    event: QuestEvent
 
     latest_refs: StoreRefs
     history_refs: HistoryRefs

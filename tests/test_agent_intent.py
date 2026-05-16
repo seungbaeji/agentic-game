@@ -3,12 +3,14 @@ from __future__ import annotations
 from agentic_game.domain.battle import BattleEvent, BattlePhase
 from agentic_game.domain.craft import CraftEvent, CraftPhase
 from agentic_game.domain.exploration import ExplorationEvent, ExplorationPhase
+from agentic_game.domain.quest import QuestEvent, QuestPhase
 from agentic_game.domain.trade import TradeEvent, TradePhase
 from agentic_game.flow.intent import (
     infer_battle_event,
     infer_craft_event,
     infer_exploration_event,
     infer_parent_subgraph,
+    infer_quest_event,
     infer_trade_event,
     is_capability_question,
 )
@@ -54,6 +56,14 @@ def test_infer_trade_event_respects_available_phase_actions() -> None:
     assert infer_trade_event(TradePhase.BROWSE, "수락할게") is None
 
 
+def test_infer_quest_event_from_progress_input() -> None:
+    assert infer_quest_event(QuestPhase.IN_PROGRESS, "목표를 달성했어") == QuestEvent.PROGRESS
+
+
+def test_infer_quest_event_respects_available_phase_actions() -> None:
+    assert infer_quest_event(QuestPhase.AVAILABLE, "완료할게") is None
+
+
 def test_infer_parent_subgraph_from_battle_intent() -> None:
     assert infer_parent_subgraph("몬스터를 공격할게") == SubgraphName.BATTLE
 
@@ -68,6 +78,10 @@ def test_infer_parent_subgraph_from_exploration_intent() -> None:
 
 def test_infer_parent_subgraph_from_trade_intent() -> None:
     assert infer_parent_subgraph("상인과 거래하고 싶어") == SubgraphName.TRADE
+
+
+def test_infer_parent_subgraph_from_quest_intent() -> None:
+    assert infer_parent_subgraph("퀘스트를 수락하고 싶어") == SubgraphName.QUEST
 
 
 def test_infer_parent_subgraph_returns_none_for_capability_question() -> None:

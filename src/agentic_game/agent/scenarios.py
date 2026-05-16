@@ -57,7 +57,7 @@ QUEST_SCENARIO = ScenarioSpec[QuestPhase, QuestEvent](
     phase_to_node={
         QuestPhase.ACCEPTED: ScenarioNode.HITL,
         QuestPhase.IN_PROGRESS: ScenarioNode.EXECUTE,
-        QuestPhase.TURN_IN: ScenarioNode.HITL,
+        QuestPhase.TURN_IN: ScenarioNode.RESPONSE,
         QuestPhase.COMPLETE: ScenarioNode.RESPONSE,
         QuestPhase.FAILED: ScenarioNode.RESPONSE,
     },
