@@ -40,6 +40,7 @@ LLM__MODEL=gpt-4.1-mini
 
 - [LLM, Tool, Flow 입문 가이드](docs/llm-tool-flow-guide.md): tool 기반 개발과 LLM 위임 구조가 낯선 사람을 위한 첫 문서
 - [용어 사전](docs/glossary.md): scenario, phase, event, flow, ToolBinding 같은 용어 정리
+- [State Model](docs/state-model.md): pure/stateless/stateful, state scope, command/query 경계
 - [Flow 중심 Scenario 실행](docs/node-flow.md): parent graph, scenario graph, LLM/flow/runtime 경계
 - [아키텍처](docs/architecture.md): 폴더 구조, 역할/책임/경계, 의존성 방향, 확장 지점
 - [Scenario 상세](docs/scenario-details.md): battle/craft/dialogue 등 현재 게임 샘플별 동작

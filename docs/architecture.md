@@ -2,7 +2,7 @@
 
 이 문서는 `agentic-game`의 패키지 경계와 의존성 방향을 설명합니다.
 
-실행 순서를 보고 싶다면 [Flow-Centered Scenario Execution](node-flow.md)를, LLM/tool/flow의 배경을 먼저 잡고 싶다면 [LLM, Tool, Flow 입문 가이드](llm-tool-flow-guide.md)를, scenario별 예시는 [Scenario Details](scenario-details.md)를 참고하세요.
+실행 순서를 보고 싶다면 [Flow-Centered Scenario Execution](node-flow.md)를, 상태 경계를 먼저 잡고 싶다면 [State Model](state-model.md)를, LLM/tool/flow의 배경을 먼저 잡고 싶다면 [LLM, Tool, Flow 입문 가이드](llm-tool-flow-guide.md)를, scenario별 예시는 [Scenario Details](scenario-details.md)를 참고하세요.
 
 ## 설계 목표
 
@@ -15,6 +15,29 @@
 - 상태 변경은 application usecase와 tool이 담당한다.
 - LLM은 자연어 이해, 구조화, 응답 생성을 돕되 상태 변경의 최종 권한자가 되지 않는다.
 - scenario가 늘어나도 graph shape, wrapper, persistence, tool 실행 코드가 과도하게 반복되지 않게 한다.
+
+## State Boundary Summary
+
+상태 모델의 자세한 설명은 [State Model](state-model.md)을 참고하세요. 이 문서에서는 패키지 경계만 요약합니다.
+
+```text
+Pure / deterministic:
+  domain
+
+Stateless definition / transformer:
+  flow, scenarios, agent
+
+State orchestration:
+  engine
+
+State read/write:
+  application, tools
+
+Physical state and session boundary:
+  outbound, inbound
+```
+
+`agentic-game`의 목표는 모든 것을 stateless로 만드는 것이 아닙니다. domain rule과 graph transformer는 가능한 한 stateless하게 유지하고, scenario 진행 상태와 domain state는 `StorePort` 뒤에서 scope 단위로 저장하고 복원합니다.
 
 ## 패키지 지도
 
@@ -42,7 +65,7 @@ src/agentic_game/
 | `flow/` | phase/event transition과 현재 phase의 action 후보 | LangGraph node, tool 실행, persistence |
 | `scenarios/` | ScenarioSpec, scenario 등록, intent 감지 | concrete store 구현, provider-specific LLM |
 | `engine/` | subgraph lifecycle, state persistence, tool runner | concrete flow 판단 |
-| `application/` | usecase와 port | outbound 구현체, LangGraph state |
+| `application/` | command/query usecase와 port | outbound 구현체, LangGraph state |
 | `tools/` | LangChain `@tool` wrapper와 result projection | graph routing, CLI |
 | `agent/` | LangGraph graph/node 조립, prompt, state shape | provider-specific LLM 구현 |
 | `inbound/` | CLI/API/UI 같은 사용자 interface | usecase 세부 조립 |
@@ -202,7 +225,7 @@ application/
   usecases/
 ```
 
-usecase는 domain 규칙과 port dependency를 조합합니다.
+usecase는 domain 규칙과 port dependency를 조합합니다. usecase object는 호출 사이의 mutable state를 보유하지 않지만, command usecase 실행은 repository port를 통해 state를 읽고 쓸 수 있습니다.
 
 예:
 
@@ -211,6 +234,8 @@ resolve_battle_action_and_store_player
 craft_item_and_store_reward
 exchange_item
 ```
+
+상태를 바꾸는 usecase와 읽기 전용 usecase가 늘어나면 `commands/`와 `queries/`로 나누는 것이 자연스럽습니다. 이 기준은 [State Model](state-model.md)의 CQRS 설명을 따릅니다.
 
 `ports.py`는 application이 필요로 하는 추상화입니다.
 

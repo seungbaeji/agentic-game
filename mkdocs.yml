@@ -18,6 +18,7 @@ nav:
       - Glossary: glossary.md
   - Design:
       - Runtime Flow: node-flow.md
+      - State Model: state-model.md
       - Architecture: architecture.md
   - Reference:
       - Scenario Details: scenario-details.md
