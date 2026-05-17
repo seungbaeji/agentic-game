@@ -1,13 +1,15 @@
 # Architecture
 
-`agentic-game`은 LangGraph 기반 에이전트 샘플이지만, LangGraph를 프로젝트 전체의 중심 계층으로 두지는 않습니다. LangGraph는 agent runtime으로 제한하고, 순수 도메인 규칙과 시스템 usecase는 별도 계층에 둡니다. 이렇게 해야 CLI, REST API, UI, LLM tool이 같은 업무 기능을 재사용할 수 있습니다.
+`agentic-game`은 LangGraph 기반 게임 시나리오 에이전트입니다. LangGraph를 프로젝트 전체의 중심 계층으로 두지 않고, phase/event flow가 scenario 실행을 이끌도록 둡니다. LangGraph는 agent 조립 계층으로 제한하고, 순수 도메인 규칙과 시스템 usecase는 별도 계층에 둡니다.
 
 ## 설계 목표
 
 - 도메인 모델은 LangGraph, LangChain, 외부 API를 모른다.
 - application usecase는 domain과 port를 조합해 시스템이 제공하는 기능을 만든다.
 - tool은 usecase를 LLM이 호출할 수 있는 형태로 노출하는 상위 계층이다.
-- agent는 LangGraph runtime 구성, node 실행, routing, prompt, state orchestration을 담당한다.
+- scenarios는 어떤 게임 시나리오가 있고 phase가 어떤 공통 실행 단계로 이어지는지 설명한다.
+- engine은 subgraph 실행, state persistence, tool runner를 담당한다.
+- agent는 LangGraph graph/node 조립, prompt, state orchestration을 담당한다.
 - inbound는 사용자와 시스템 사이의 interface다. CLI, REST API, UI는 여기에 추가된다.
 - outbound는 외부 시스템 adapter다. LLM provider, store, random source 등이 여기에 있다.
 - bootstrap은 실제 adapter를 조립해 실행 가능한 container를 만든다.
@@ -20,6 +22,8 @@ src/agentic_game/
   config/
   domain/
   flow/
+  scenarios/
+  engine/
   application/
   tools/
   agent/
@@ -68,18 +72,23 @@ config/
 domain/
   battle.py
   craft.py
+  exploration.py
+  quest.py
+  trade.py
+  dialogue.py
+  skill_training.py
 ```
 
 여기에는 다음이 들어갑니다.
 
-- 전투/제작 phase, event, outcome 같은 enum
+- battle/craft/exploration 같은 시나리오의 phase, event, outcome enum
 - usecase 결과 dataclass
 - 순수 판정 함수
 
 여기에는 다음이 들어가면 안 됩니다.
 
 - LangGraph state
-- node routing
+- ScenarioNode 실행 단계
 - LLM prompt
 - store reference
 - LangChain tool
@@ -95,8 +104,13 @@ domain은 프로젝트의 가장 안쪽 계층입니다. 다른 계층을 import
 flow/
   battle.py
   craft.py
-  intent.py
+  exploration.py
+  quest.py
+  trade.py
+  dialogue.py
+  skill_training.py
   models.py
+  transitions.py
 ```
 
 예를 들어 battle에는 다음 흐름이 있습니다.
@@ -243,6 +257,12 @@ graph/
   parent.py
   battle.py
   craft.py
+  exploration.py
+  quest.py
+  trade.py
+  dialogue.py
+  skill_training.py
+  scenario_graph.py
 ```
 
 여기에서만 `StateGraph`, `add_node`, `add_edge`, `add_conditional_edges`, `compile`이 보이는 것이 이상적입니다.
@@ -258,6 +278,12 @@ nodes/
   parent.py
   battle.py
   craft.py
+  exploration.py
+  quest.py
+  trade.py
+  dialogue.py
+  skill_training.py
+  scenario_nodes.py
 ```
 
 node는 다음 일을 합니다.
@@ -288,7 +314,7 @@ node 파일에서 긴 prompt 문자열이 사라지면 node는 “무슨 일을 
 - `BattleDecision`
 - `CraftDecision`
 
-이 객체들은 외부 LLM 응답과 내부 agent runtime 사이의 경계 객체입니다. 그래서 Pydantic `BaseModel`을 사용합니다.
+이 객체들은 외부 LLM 응답과 내부 agent 조립 계층 사이의 경계 객체입니다. 그래서 Pydantic `BaseModel`을 사용합니다.
 
 #### state.py
 
@@ -302,7 +328,7 @@ LangGraph state는 dict 기반으로 merge/update되기 때문에 `TypedDict`를
 
 #### models.py
 
-`models.py`는 agent runtime model입니다.
+`models.py`는 parent graph model입니다.
 
 - `ParentNode`
 - `SubgraphEntry`
@@ -384,6 +410,8 @@ outbound/
 inbound
   -> bootstrap
     -> agent
+      -> scenarios
+      -> engine
       -> tools
       -> application
       -> flow
@@ -397,9 +425,11 @@ bootstrap -> outbound implementations
 
 - `domain`은 아무 계층도 의존하지 않는다.
 - `flow`는 domain을 의존하지만 agent를 의존하지 않는다.
+- `scenarios`는 flow/domain의 정의를 읽고, agent/engine 조립 지점과 만난다.
+- `engine`은 subgraph 실행과 tool runner를 담당하지만 concrete flow 전이를 직접 판단하지 않는다.
 - `application`은 domain과 port를 의존한다.
 - `tools`는 application usecase를 LLM tool로 노출한다.
-- `agent`는 LangGraph runtime이며 flow, tools, application port를 조합한다.
+- `agent`는 LangGraph 조립 계층이며 scenarios, engine, tools, application port를 조합한다.
 - `outbound`는 application port를 구현한다.
 - `inbound`는 bootstrap으로 조립된 graph만 사용한다.
 
@@ -412,7 +442,7 @@ bootstrap -> outbound implementations
 - LangGraph state: `TypedDict`
 - 반복되는 primitive: `type alias`
 
-예를 들어 `ParentDecision`, `BattleDecision`, `CraftDecision`은 LLM structured output이므로 Pydantic 모델입니다. 반면 battle/craft 결과는 내부 usecase 결과이므로 dataclass입니다. LangGraph state는 dict merge semantics가 중요하므로 `TypedDict`를 사용합니다.
+예를 들어 `ParentDecision`, `BattleDecision`, `CraftDecision`은 LLM structured output이므로 Pydantic 모델입니다. 반면 usecase 결과는 내부 결과이므로 dataclass입니다. LangGraph state는 dict merge semantics가 중요하므로 `TypedDict`를 사용합니다.
 
 ## 확장 방법
 
