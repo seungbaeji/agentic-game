@@ -8,6 +8,8 @@
 
 LangGraph subgraph는 scenario마다 새로 설계하지 않고 공통 `ScenarioNode` shape를 사용합니다. `BattlePhase.ACTION`으로 이동한다는 것은 업무 상태가 행동 선택 단계가 됐다는 뜻이고, `ScenarioSpec.phase_to_node`가 이 phase를 `ScenarioNode.HITL` 같은 공통 실행 단계로 바꿉니다.
 
+사용자가 선택할 수 있는 행동 후보는 `ActionCard`로 직렬화됩니다. `ActionCard`는 event, label, description을 기본으로 갖고, tool-backed action은 tool name, state effect, risk metadata를 추가로 가질 수 있습니다. LLM은 이 metadata를 참고해 event를 선택하지만 tool을 직접 실행하지는 않습니다.
+
 ## 전체 실행 흐름
 
 CLI 기준 전체 흐름은 다음과 같습니다.

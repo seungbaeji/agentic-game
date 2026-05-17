@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from agentic_game.domain.battle import BattleEvent, BattlePhase
-from agentic_game.flow.models import AvailableActions, TransitionRule
+from agentic_game.flow.models import ActionCard, AvailableActions, TransitionRule
 from agentic_game.flow.transitions import resolve_transition, serialize_actions
 
 type BattleTransitionRule = TransitionRule[BattlePhase, BattleEvent]
@@ -73,10 +73,32 @@ BATTLE_TRANSITIONS: list[BattleTransitionRule] = [
     ),
 ]
 
+BATTLE_ACTION_METADATA: dict[BattleEvent, ActionCard] = {
+    BattleEvent.ATTACK: {
+        "tool_name": "resolve_battle_tool",
+        "state_effect": "player EXP can increase when the attack hits.",
+        "risk": "state_change",
+    },
+    BattleEvent.DEFEND: {
+        "tool_name": "resolve_battle_tool",
+        "state_effect": "player HP can decrease if guard breaks.",
+        "risk": "state_change",
+    },
+    BattleEvent.FLEE: {
+        "tool_name": "resolve_battle_tool",
+        "state_effect": "player HP can decrease if fleeing fails.",
+        "risk": "state_change",
+    },
+}
+
 
 def serialize_battle_actions(phase: BattlePhase) -> AvailableActions:
     """Return user-facing battle actions available in the current phase."""
-    return serialize_actions(BATTLE_TRANSITIONS, phase)
+    return serialize_actions(
+        BATTLE_TRANSITIONS,
+        phase,
+        metadata_by_event=BATTLE_ACTION_METADATA,
+    )
 
 
 def resolve_battle_transition(

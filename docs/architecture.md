@@ -135,6 +135,18 @@ RESOLVE --complete--> COMPLETE
 
 `flow`는 LangGraph node를 모릅니다. phase/event 전이만 다루고, graph 실행 단계 선택은 `ScenarioSpec.phase_to_node`가 담당합니다.
 
+현재 action 직렬화 결과는 `ActionCard`입니다. `ActionCard`는 기존 `ActionSpec`을 대체한 개념이며, decision prompt에 전달되는 행동 후보입니다. 기본 필드는 `event`, `label`, `description`이고, battle/craft처럼 tool-backed action은 `tool_name`, `state_effect`, `risk` 같은 optional metadata를 가질 수 있습니다.
+
+```text
+TransitionRule
+  -> ActionCard
+  -> LLM/event decision
+  -> flow validation
+  -> optional tool execution
+```
+
+중요한 점은 `ActionCard`가 tool을 직접 실행하지 않는다는 것입니다. LLM은 action metadata를 참고해 event를 고르고, runtime이 event를 검증한 뒤 실행합니다.
+
 ### application
 
 `application/`은 시스템 usecase와 port를 둡니다.

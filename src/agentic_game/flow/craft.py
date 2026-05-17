@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 from agentic_game.domain.craft import CraftEvent, CraftPhase
-from agentic_game.flow.models import AvailableActions, TransitionRule
+from agentic_game.flow.models import ActionCard, AvailableActions, TransitionRule
 from agentic_game.flow.transitions import resolve_transition, serialize_actions
 
 type LatestCraftResult = dict[str, Any]
@@ -64,10 +64,27 @@ CRAFT_TRANSITIONS: list[CraftTransitionRule] = [
     ),
 ]
 
+CRAFT_ACTION_METADATA: dict[CraftEvent, ActionCard] = {
+    CraftEvent.CRAFT_POTION: {
+        "tool_name": "craft_item_tool",
+        "state_effect": "healing_potion can be added to inventory on success.",
+        "risk": "state_change",
+    },
+    CraftEvent.CRAFT_SWORD: {
+        "tool_name": "craft_item_tool",
+        "state_effect": "old_sword can be added to inventory on success.",
+        "risk": "state_change",
+    },
+}
+
 
 def serialize_craft_actions(phase: CraftPhase) -> AvailableActions:
     """Return user-facing craft actions available in the current phase."""
-    return serialize_actions(CRAFT_TRANSITIONS, phase)
+    return serialize_actions(
+        CRAFT_TRANSITIONS,
+        phase,
+        metadata_by_event=CRAFT_ACTION_METADATA,
+    )
 
 
 def resolve_craft_transition(

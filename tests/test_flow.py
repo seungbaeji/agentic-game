@@ -33,6 +33,9 @@ def test_battle_flow_exposes_only_current_phase_actions() -> None:
         BattleEvent.DEFEND.value,
         BattleEvent.FLEE.value,
     }
+    attack = next(action for action in actions if action["event"] == BattleEvent.ATTACK)
+    assert attack["tool_name"] == "resolve_battle_tool"
+    assert attack["risk"] == "state_change"
 
 
 def test_battle_flow_resolves_allowed_transition() -> None:
@@ -60,6 +63,13 @@ def test_craft_flow_exposes_only_current_phase_actions() -> None:
         CraftEvent.CRAFT_POTION.value,
         CraftEvent.CRAFT_SWORD.value,
     }
+    potion = next(
+        action for action in actions if action["event"] == CraftEvent.CRAFT_POTION
+    )
+    assert potion["tool_name"] == "craft_item_tool"
+    assert potion["state_effect"] == (
+        "healing_potion can be added to inventory on success."
+    )
 
 
 def test_craft_flow_resolves_allowed_transition() -> None:

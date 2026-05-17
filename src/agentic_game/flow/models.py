@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import TypedDict
+from typing import Literal, TypedDict
 
 
 class SubgraphName(StrEnum):
@@ -15,13 +15,16 @@ class SubgraphName(StrEnum):
     SKILL_TRAINING = "skill_training"
 
 
-class ActionSpec(TypedDict):
+class ActionCard(TypedDict, total=False):
     event: str
     label: str
     description: str
+    tool_name: str
+    state_effect: str
+    risk: Literal["none", "read", "state_change"]
 
 
-type AvailableActions = list[ActionSpec]
+type AvailableActions = list[ActionCard]
 
 
 @dataclass(frozen=True)
