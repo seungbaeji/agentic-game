@@ -299,12 +299,12 @@ runtime이 통제해야 하는가?
 
 ## References
 
-- LangGraph Workflows and Agents: https://docs.langchain.com/oss/python/langgraph/workflows-agents
-- LangChain Tools and ToolNode: https://docs.langchain.com/oss/python/langchain/tools
-- Model Context Protocol Specification: https://modelcontextprotocol.io/specification/2025-11-25
-- MCP Sampling: https://modelcontextprotocol.io/specification/draft/client/sampling
-- robocorp/llmstatemachine: https://github.com/robocorp/llmstatemachine
-- Stately Agent: https://github.com/statelyai/agent
-- Loop Engine: https://www.loopengine.io/
-- Voyager: https://arxiv.org/abs/2305.16291
-- econagents: https://econagents.readthedocs.io/en/latest/
+- LangGraph Workflows and Agents: <https://docs.langchain.com/oss/python/langgraph/workflows-agents>
+- LangChain Tools and ToolNode: <https://docs.langchain.com/oss/python/langchain/tools>
+- Model Context Protocol Specification: <https://modelcontextprotocol.io/specification/2025-11-25>
+- MCP Sampling: <https://modelcontextprotocol.io/specification/draft/client/sampling>
+- robocorp/llmstatemachine: <https://github.com/robocorp/llmstatemachine>
+- Stately Agent: <https://github.com/statelyai/agent>
+- Loop Engine: <https://www.loopengine.io/>
+- Voyager: <https://arxiv.org/abs/2305.16291>
+- econagents: <https://econagents.readthedocs.io/en/latest/>

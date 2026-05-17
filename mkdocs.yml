@@ -13,8 +13,10 @@ theme:
 
 nav:
   - Home: index.md
+  - Glossary: glossary.md
   - Architecture: architecture.md
-  - Node Flow And Transitions: node-flow.md
+  - Runtime Flow: node-flow.md
+  - Scenario Details: scenario-details.md
   - Tool Calling Comparison: tool-calling-comparison.md
 
 markdown_extensions:

@@ -7,7 +7,9 @@
 ## 문서 구성
 
 - [Architecture](architecture.md): 폴더 구조, 역할/책임/경계, 의존성 방향, 확장 지점
-- [Flow-Centered Scenario Execution](node-flow.md): parent graph, scenario flow, 공통 graph 실행 방식
+- [Glossary](glossary.md): scenario, phase, event, flow, ToolBinding 같은 용어 정리
+- [Flow-Centered Scenario Execution](node-flow.md): parent graph, scenario graph, LLM/flow/runtime 경계
+- [Scenario Details](scenario-details.md): 현재 게임 샘플별 동작 방식
 - [Tool Calling Architecture Comparison](tool-calling-comparison.md): MCP/tool-calling 패턴과 현재 hybrid runtime 비교
 
 ## 핵심 구조
@@ -43,7 +45,7 @@ src/agentic_game/
 
 현재 실제 `@tool` 계층과 raw/llm/ui payload 저장은 battle/craft/trade에 있습니다. 이 시나리오들은 `ToolBinding`으로 event와 tool input을 연결합니다. 샘플에서는 player, inventory, quest, world 같은 game state를 저장하지만, 라이브러리로 추출할 때는 문서 처리 상태, 승인 상태, 고객지원 티켓, 운영 변경 요청 같은 도메인 상태로 바뀔 수 있습니다.
 
-LLM 다양성은 battle/craft에 적용되어 있습니다. 상태 변경은 usecase가 확정하고, LLM은 확정된 결과의 응답 문장만 변주합니다. 이는 state-changing workflow에서 LLM 자유도와 deterministic runtime control을 분리하기 위한 예시입니다.
+LLM 활용은 battle/craft/dialogue에 적용되어 있습니다. 상태 변경은 usecase와 flow가 확정하고, LLM은 의도 분류, 상세 계획, 후속 질문, 응답 문장 생성에 사용됩니다. 이는 state-changing workflow에서 LLM 자유도와 deterministic runtime control을 분리하기 위한 예시입니다.
 
 ## 실행
 
