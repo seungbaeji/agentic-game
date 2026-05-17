@@ -17,8 +17,8 @@ from agentic_game.engine.tool_runner import ToolInvoker, execute_craft_tool
 from agentic_game.flow.craft import (
     serialize_craft_actions,
 )
-from agentic_game.scenarios.craft import infer_craft_event
 from agentic_game.scenarios.definitions import CRAFT_SCENARIO
+from agentic_game.scenarios.intent import detect_craft_event
 from agentic_game.scenarios.spec import ScenarioNode
 
 _craft_flow_node = make_flow_node(
@@ -36,12 +36,12 @@ def make_craft_decision_node(llm: LLMPort):
         phase = state.get("phase", CraftPhase.SELECT_RECIPE)
         available_actions = serialize_craft_actions(phase)
         user_text = state.get("human_input") or state.get("user_input", "")
-        inferred_event = infer_craft_event(phase, user_text)
+        detected_event = detect_craft_event(phase, user_text)
 
-        if inferred_event is not None:
+        if detected_event is not None:
             return {
                 "phase": phase,
-                "event": inferred_event,
+                "event": detected_event,
                 "available_actions": available_actions,
                 "reason": "user_input에서 명시적인 제작 행동을 감지했습니다.",
                 "next_node": ScenarioNode.FLOW,
@@ -92,7 +92,7 @@ def craft_flow_node(state: CraftState) -> CraftState:
 def craft_hitl_node(state: CraftState) -> CraftState:
     """Ask for a craft recipe when the user has not provided one."""
     human_input = state.get("human_input", "")
-    if not infer_craft_event(CraftPhase.CRAFT, human_input):
+    if not detect_craft_event(CraftPhase.CRAFT, human_input):
         return {
             "response": ("HITL 필요: 제작할 아이템을 선택하세요. 가능한 선택: potion / sword"),
             "next_node": ScenarioNode.ASK_USER,

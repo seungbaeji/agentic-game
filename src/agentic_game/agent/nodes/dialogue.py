@@ -13,14 +13,14 @@ from agentic_game.application.usecases.dialogue import remember_dialogue_event
 from agentic_game.domain.dialogue import DialogueEvent, DialoguePhase
 from agentic_game.flow.dialogue import serialize_dialogue_actions
 from agentic_game.scenarios.definitions import DIALOGUE_SCENARIO
-from agentic_game.scenarios.dialogue import infer_dialogue_event
+from agentic_game.scenarios.intent import detect_dialogue_event
 from agentic_game.scenarios.spec import ScenarioNode
 
 dialogue_decision_node = make_decision_node(
     default_phase=DialoguePhase.GREETING,
     serialize_actions=serialize_dialogue_actions,
-    infer_event=infer_dialogue_event,
-    inferred_reason="user_input에서 명시적인 대화 행동을 감지했습니다.",
+    detect_event=detect_dialogue_event,
+    detected_reason="user_input에서 명시적인 대화 행동을 감지했습니다.",
     fallback_reason="대화 선택이 필요합니다.",
     default_events={
         DialoguePhase.GREETING: (
@@ -39,7 +39,7 @@ dialogue_flow_node = make_flow_node(
 
 dialogue_hitl_node = make_hitl_node(
     default_phase=DialoguePhase.CHOICE,
-    infer_event=infer_dialogue_event,
+    detect_event=detect_dialogue_event,
     prompt="대화 선택지를 골라 주세요. 가능한 선택: 소문 묻기 / 거래 묻기 / 떠나기",
 )
 

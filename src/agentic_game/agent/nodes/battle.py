@@ -17,8 +17,8 @@ from agentic_game.engine.tool_runner import ToolInvoker, execute_battle_tool
 from agentic_game.flow.battle import (
     serialize_battle_actions,
 )
-from agentic_game.scenarios.battle import infer_battle_event
 from agentic_game.scenarios.definitions import BATTLE_SCENARIO
+from agentic_game.scenarios.intent import detect_battle_event
 from agentic_game.scenarios.spec import ScenarioNode
 
 _battle_flow_node = make_flow_node(
@@ -36,12 +36,12 @@ def make_battle_decision_node(llm: LLMPort):
         phase = state.get("phase", BattlePhase.PREPARE)
         available_actions = serialize_battle_actions(phase)
         user_text = state.get("human_input") or state.get("user_input", "")
-        inferred_event = infer_battle_event(phase, user_text)
+        detected_event = detect_battle_event(phase, user_text)
 
-        if inferred_event is not None:
+        if detected_event is not None:
             return {
                 "phase": phase,
-                "event": inferred_event,
+                "event": detected_event,
                 "available_actions": available_actions,
                 "reason": "user_input에서 명시적인 전투 행동을 감지했습니다.",
                 "next_node": ScenarioNode.FLOW,

@@ -17,14 +17,14 @@ from agentic_game.application.usecases.skill_training import (
 from agentic_game.domain.skill_training import SkillTrainingPhase
 from agentic_game.flow.skill_training import serialize_skill_training_actions
 from agentic_game.scenarios.definitions import SKILL_TRAINING_SCENARIO
-from agentic_game.scenarios.skill_training import infer_skill_training_event
+from agentic_game.scenarios.intent import detect_skill_training_event
 from agentic_game.scenarios.spec import ScenarioNode
 
 skill_training_decision_node = make_decision_node(
     default_phase=SkillTrainingPhase.SELECT_SKILL,
     serialize_actions=serialize_skill_training_actions,
-    infer_event=infer_skill_training_event,
-    inferred_reason="user_input에서 명시적인 스킬 훈련 행동을 감지했습니다.",
+    detect_event=detect_skill_training_event,
+    detected_reason="user_input에서 명시적인 스킬 훈련 행동을 감지했습니다.",
     fallback_reason="훈련할 스킬 또는 행동 선택이 필요합니다.",
 )
 
@@ -37,7 +37,7 @@ skill_training_flow_node = make_flow_node(
 
 skill_training_hitl_node = make_hitl_node(
     default_phase=SkillTrainingPhase.SELECT_SKILL,
-    infer_event=infer_skill_training_event,
+    detect_event=detect_skill_training_event,
     prompt="훈련 행동을 선택해 주세요. 가능한 선택: 검술 / 연금술 / 훈련 / 레벨 상승",
 )
 

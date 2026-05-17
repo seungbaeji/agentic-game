@@ -16,7 +16,7 @@
 src/agentic_game/
   domain/       # 순수 비즈니스 데이터와 규칙
   flow/         # 업무 phase/event transition
-  scenarios/    # ScenarioSpec, intent, parent routing, scenario 등록
+  scenarios/    # ScenarioSpec, intent 감지, scenario 등록
   engine/       # subgraph 실행과 tool runner
   application/  # usecase와 port
   agent/        # LangGraph graph/node 조립

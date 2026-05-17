@@ -24,7 +24,7 @@ uv run --group docs agentic-game-docs serve
 src/agentic_game/
   domain/       # 샘플 도메인 데이터, phase/event enum, 순수 도메인 규칙
   flow/         # phase/event transition과 flow helper
-  scenarios/    # ScenarioSpec 정의, scenario intent, parent routing, graph 등록
+  scenarios/    # ScenarioSpec 정의, intent 감지, graph 등록
   engine/       # subgraph 실행, persistence wrapper, tool runner
   application/  # usecase와 port
   agent/        # LangGraph graph/node 조립, prompt, routing
@@ -96,14 +96,7 @@ scenarios/
   spec.py          # 공통 ScenarioSpec / ScenarioNode
   definitions.py   # 각 샘플 시나리오의 ScenarioSpec 정의
   registry.py      # parent graph에 concrete scenario 연결
-  router.py        # parent-level intent routing
-  battle.py        # battle 내부 event intent
-  craft.py         # craft 내부 event intent
-  exploration.py   # exploration 내부 event intent
-  quest.py
-  trade.py
-  dialogue.py
-  skill_training.py
+  intent.py        # parent scenario와 scenario event 감지 규칙
 ```
 
 예를 들어 전투에서 `몬스터를 공격할게`를 입력하면 다음처럼 흐릅니다.

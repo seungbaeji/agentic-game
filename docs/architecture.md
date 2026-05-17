@@ -245,21 +245,13 @@ scenarios/
   spec.py
   definitions.py
   registry.py
-  router.py
-  battle.py
-  craft.py
-  exploration.py
-  quest.py
-  trade.py
-  dialogue.py
-  skill_training.py
+  intent.py
 ```
 
 `spec.py`는 `ScenarioSpec`, `ScenarioNode` 같은 공통 모델만 둡니다.
 `definitions.py`는 각 시나리오의 `ScenarioSpec` 정의만 둡니다.
-`router.py`는 parent-level intent routing만 둡니다.
 `registry.py`는 concrete scenario를 parent graph에 연결합니다.
-각 scenario 파일은 해당 scenario 내부 event intent만 둡니다.
+`intent.py`는 parent scenario 선택과 scenario 내부 event 감지 규칙을 둡니다.
 
 ### engine
 
@@ -554,7 +546,7 @@ bootstrap -> outbound implementations
 1. `domain/`에 순수 데이터와 규칙을 추가한다.
 2. `flow/`에 phase/event transition을 추가한다.
 3. `scenarios/definitions.py`에 `ScenarioSpec`을 추가한다.
-4. `scenarios/<scenario>.py`에 scenario 내부 event intent를 추가한다.
+4. `scenarios/intent.py`에 parent scenario와 scenario 내부 event 감지 규칙을 추가한다.
 5. 필요하면 `application/usecases/`에 usecase 함수를 추가한다.
 6. 필요하면 `tools/`에 LLM tool을 추가한다.
 7. `agent/models.py`에 parent/subgraph enum과 registry entry를 추가한다.

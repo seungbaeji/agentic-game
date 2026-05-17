@@ -13,14 +13,14 @@ from agentic_game.application.usecases.quest import complete_quest, mark_quest_p
 from agentic_game.domain.quest import QuestEvent, QuestPhase
 from agentic_game.flow.quest import serialize_quest_actions
 from agentic_game.scenarios.definitions import QUEST_SCENARIO
-from agentic_game.scenarios.quest import infer_quest_event
+from agentic_game.scenarios.intent import detect_quest_event
 from agentic_game.scenarios.spec import ScenarioNode
 
 quest_decision_node = make_decision_node(
     default_phase=QuestPhase.AVAILABLE,
     serialize_actions=serialize_quest_actions,
-    infer_event=infer_quest_event,
-    inferred_reason="user_input에서 명시적인 퀘스트 행동을 감지했습니다.",
+    detect_event=detect_quest_event,
+    detected_reason="user_input에서 명시적인 퀘스트 행동을 감지했습니다.",
     fallback_reason="퀘스트 행동 선택이 필요합니다.",
     default_events={
         QuestPhase.AVAILABLE: (QuestEvent.ACCEPT, "퀘스트를 수락합니다."),
@@ -36,7 +36,7 @@ quest_flow_node = make_flow_node(
 
 quest_hitl_node = make_hitl_node(
     default_phase=QuestPhase.ACCEPTED,
-    infer_event=infer_quest_event,
+    detect_event=detect_quest_event,
     prompt="퀘스트 행동을 선택해 주세요. 가능한 선택: 시작 / 진행 / 완료 / 포기",
 )
 

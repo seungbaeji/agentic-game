@@ -9,7 +9,7 @@ from agentic_game.agent.prompts import (
 from agentic_game.agent.state import ParentState
 from agentic_game.agent.types import AvailableSubgraphs, ResponseText
 from agentic_game.application.ports import LLMPort
-from agentic_game.scenarios.router import infer_parent_subgraph, is_capability_question
+from agentic_game.scenarios.intent import detect_parent_subgraph, is_capability_question
 
 
 def make_parent_decision_node(llm: LLMPort):
@@ -18,12 +18,12 @@ def make_parent_decision_node(llm: LLMPort):
     def parent_decision_node(state: ParentState) -> ParentState:
         """Decide the target subgraph from deterministic intent or LLM output."""
         user_input = state.get("user_input", "")
-        inferred_subgraph = infer_parent_subgraph(user_input)
-        if inferred_subgraph is not None:
+        detected_subgraph = detect_parent_subgraph(user_input)
+        if detected_subgraph is not None:
             return {
-                "target_subgraph": inferred_subgraph,
+                "target_subgraph": detected_subgraph,
                 "reason": "user_input에서 명시적인 업무 의도를 감지했습니다.",
-                "next_node": SUBGRAPH_REGISTRY[inferred_subgraph].node,
+                "next_node": SUBGRAPH_REGISTRY[detected_subgraph].node,
             }
 
         if is_capability_question(user_input):
