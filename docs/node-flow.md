@@ -73,6 +73,26 @@ StateGraph(ParentState)
 
 graph builder는 node 내부 로직을 모릅니다. node와 edge table을 연결할 뿐입니다.
 
+### LLM Decision Boundary
+
+LLM을 많이 활용하더라도 flow 자체를 LLM에게 맡기지 않습니다.
+
+입력 처리 우선순위는 다음과 같습니다.
+
+1. deterministic fast-path
+   명시적인 행동 입력은 키워드 기반 감지로 바로 event를 고릅니다.
+
+2. LLM scenario decision
+   명시적인 행동이 아니면 LLM이 입력을 `action`, `question`, `clarify`, `smalltalk`으로 분류합니다.
+
+3. flow transition
+   `action`만 `flow/`의 phase/event transition table을 통과합니다.
+
+4. direct response
+   `question`, `clarify`, `smalltalk`은 phase를 움직이지 않고 현재 scenario state를 바탕으로 응답합니다.
+
+예를 들어 dialogue에서 `소문을 물어볼게`는 `ask_rumor` action이므로 `CHOICE -> REACT`로 이동합니다. 이후 `어떤 소문인데?`는 후속 질문이므로 phase를 그대로 두고 직전 topic에 대해 답합니다.
+
 ### Decision Node
 
 `agent/nodes/parent.py`의 `make_parent_decision_node`는 target subgraph를 고릅니다.
@@ -444,8 +464,12 @@ COMPLETE
 
 ```text
 CONTINUE
-CRAFT_POTION
-CRAFT_SWORD
+CRAFT_CONSUMABLE
+CRAFT_WEAPON
+CRAFT_ARMOR
+CRAFT_ACCESSORY
+CRAFT_TOOL
+CRAFT_MATERIAL
 RETRY
 COMPLETE
 ```
@@ -456,10 +480,18 @@ COMPLETE
 
 ```text
 SELECT_RECIPE --CONTINUE--> CRAFT
-SELECT_RECIPE --CRAFT_POTION--> RESULT
-SELECT_RECIPE --CRAFT_SWORD--> RESULT
-CRAFT --CRAFT_POTION--> RESULT
-CRAFT --CRAFT_SWORD--> RESULT
+SELECT_RECIPE --CRAFT_CONSUMABLE--> RESULT
+SELECT_RECIPE --CRAFT_WEAPON--> RESULT
+SELECT_RECIPE --CRAFT_ARMOR--> RESULT
+SELECT_RECIPE --CRAFT_ACCESSORY--> RESULT
+SELECT_RECIPE --CRAFT_TOOL--> RESULT
+SELECT_RECIPE --CRAFT_MATERIAL--> RESULT
+CRAFT --CRAFT_CONSUMABLE--> RESULT
+CRAFT --CRAFT_WEAPON--> RESULT
+CRAFT --CRAFT_ARMOR--> RESULT
+CRAFT --CRAFT_ACCESSORY--> RESULT
+CRAFT --CRAFT_TOOL--> RESULT
+CRAFT --CRAFT_MATERIAL--> RESULT
 RESULT --RETRY--> CRAFT
 RESULT --COMPLETE--> COMPLETE
 ```
@@ -486,27 +518,29 @@ RESPONSE -> END
 ASK_USER -> END
 ```
 
-Battle과 Craft 모두 같은 공통 graph shape를 사용합니다. Craft는 node 구현에서 `DECISION`이 바로 `ASK_USER`로 가는 경우를 적극적으로 사용합니다. “제작하고 싶어”처럼 recipe가 없는 입력은 제작할 아이템을 물어야 하기 때문입니다.
+Battle과 Craft 모두 같은 공통 graph shape를 사용합니다. Craft는 node 구현에서 `DECISION`이 바로 `ASK_USER`로 가는 경우를 적극적으로 사용합니다. “제작하고 싶어”처럼 아이템 상세가 없는 입력은 제작할 범주와 아이템 정보를 물어야 하기 때문입니다.
 
 ### Craft Decision Node
 
 처리 순서:
 
 1. 현재 phase의 available actions를 만든다.
-2. 명시적 recipe intent를 감지한다.
-3. recipe가 있으면 `ScenarioNode.FLOW`로 보낸다.
-4. `SELECT_RECIPE` phase에서 recipe가 없으면 `CONTINUE` event로 `FLOW`에 보낸다.
-5. `CRAFT` phase에서 recipe가 없으면 `ASK_USER`로 보낸다.
-6. 그 외에는 LLM structured output으로 `CraftDecision`을 받는다.
+2. 명시적 category intent를 감지한다.
+3. 간단한 입력이면 기본 `CraftPlan`을 만들어 `ScenarioNode.FLOW`로 보낸다.
+4. `SELECT_RECIPE` phase에서 상세가 없으면 `CONTINUE` event로 `FLOW`에 보낸다.
+5. `CRAFT` phase에서는 LLM structured output으로 `CraftDecision`과 `CraftPlan`을 받는다.
+6. `action`이면 category event만 flow로 보내고, 상세 아이템 정보는 tool input으로 넘긴다.
 
 이 로직 때문에 다음 UX가 가능합니다.
 
 ```text
 > 제작하고 싶어
-제작할 아이템을 선택해 주세요. 가능한 선택: 포션 / 검
-> 포션
-potion 제작 성공
+제작할 아이템을 알려 주세요. 범주: 소모품 / 무기 / 방어구 / 장신구 / 도구 / 재료. 예: 회복 포션, 불꽃 단검, 튼튼한 방패, 유적 열쇠
+> 불꽃 단검을 만들래
+불꽃 단검 제작 성공
 ```
+
+Craft에서 flow는 아이템 상세가 아니라 일반 범주를 봅니다. 예를 들어 `불꽃 단검`은 LLM이 `weapon` 범주와 `flame_dagger` item id로 해석하지만, flow transition은 `CRAFT_WEAPON` event만 검증합니다.
 
 ### Craft Flow Node
 
@@ -534,16 +568,16 @@ SELECT_RECIPE + CONTINUE
 ```
 
 ```text
-CRAFT + CRAFT_POTION
+CRAFT + CRAFT_WEAPON
   -> flow transition: RESULT
   -> phase_to_node: ScenarioNode.EXECUTE
 ```
 
 ### Craft HITL Node
 
-`craft_hitl_node`는 recipe 선택이 필요한지 확인합니다.
+`craft_hitl_node`는 제작할 아이템 상세가 있는지 확인합니다.
 
-recipe가 없으면:
+`CraftPlan`이 없으면:
 
 ```python
 {
@@ -552,7 +586,7 @@ recipe가 없으면:
 }
 ```
 
-recipe가 있으면:
+`CraftPlan`이 있으면:
 
 ```python
 {
@@ -590,7 +624,7 @@ craft / result / raw / history / 1
 game / inventory / latest
 ```
 
-현재 craft 성공 시 `healing_potion`, `old_sword` 같은 제작 결과가 inventory에 누적됩니다. 이 inventory는 tool payload가 아니라 플레이어 게임 상태입니다.
+현재 craft 성공 시 `CraftPlan.item_name`으로 정해진 제작 결과가 inventory에 누적됩니다. 이 inventory는 tool payload가 아니라 플레이어 게임 상태입니다.
 
 craft 응답은 선택적으로 LLM narration을 사용합니다.
 
@@ -675,10 +709,10 @@ parent graph
 예:
 
 ```text
-> 포션
-potion 제작 성공
-> 어떤 포션이야?
-방금 제작한 potion은 healing_potion입니다.
+> 불꽃 단검을 만들래
+불꽃 단검 제작 성공
+> 어떤 단검이야?
+방금 제작한 불꽃 단검은 무기 범주의 아이템이고, 의도한 효과는 burn입니다.
 ```
 
 이 응답은 LLM이나 tool을 다시 호출하지 않고 `flow/craft.py`의 간단한 flow 함수로 처리됩니다.

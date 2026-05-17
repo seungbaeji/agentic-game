@@ -30,7 +30,10 @@ def test_detect_battle_event_respects_available_phase_actions() -> None:
 
 
 def test_detect_craft_event_from_direct_select_recipe_input() -> None:
-    assert detect_craft_event(CraftPhase.SELECT_RECIPE, "포션을 제작하고 싶어") == CraftEvent.CRAFT_POTION
+    assert (
+        detect_craft_event(CraftPhase.SELECT_RECIPE, "포션을 제작하고 싶어")
+        == CraftEvent.CRAFT_CONSUMABLE
+    )
 
 
 def test_detect_craft_event_does_not_guess_recipe_from_vague_craft_intent() -> None:

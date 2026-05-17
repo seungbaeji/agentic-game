@@ -17,6 +17,7 @@ from agentic_game.application.usecases import (
     resolve_battle_action_and_store_player,
 )
 from agentic_game.domain.battle import BattleOutcome
+from agentic_game.domain.craft import CraftCategory
 from agentic_game.domain.dialogue import DialogueEvent
 from agentic_game.domain.exploration import ExplorationEvent
 from agentic_game.outbound.store import LangGraphStoreAdapter
@@ -51,7 +52,7 @@ def test_resolve_battle_action_and_store_player_adds_exp() -> None:
 
 
 def test_craft_item_uses_random_port() -> None:
-    result = craft_item("potion", random=FixedRandom(d20=[19]))
+    result = craft_item(CraftCategory.CONSUMABLE, random=FixedRandom(d20=[19]))
 
     assert result.success is True
     assert result.bonus is True
@@ -62,7 +63,7 @@ def test_craft_item_and_store_reward_adds_successful_item_to_inventory() -> None
     game_state = GameStateRepository(store)
 
     result = craft_item_and_store_reward(
-        "potion",
+        CraftCategory.CONSUMABLE,
         random=FixedRandom(d20=[19]),
         game_state=game_state,
     )
@@ -174,7 +175,24 @@ def test_dialogue_usecase_updates_npc_memory() -> None:
 
 def test_tool_schema_hides_injected_dependencies() -> None:
     assert resolve_battle_tool.args == {"action": {"title": "Action", "type": "string"}}
-    assert craft_item_tool.args == {"recipe": {"title": "Recipe", "type": "string"}}
+    assert craft_item_tool.args == {
+        "category": {"title": "Category", "type": "string"},
+        "item_name": {
+            "anyOf": [{"type": "string"}, {"type": "null"}],
+            "default": None,
+            "title": "Item Name",
+        },
+        "display_name": {
+            "anyOf": [{"type": "string"}, {"type": "null"}],
+            "default": None,
+            "title": "Display Name",
+        },
+        "requested_effect": {
+            "anyOf": [{"type": "string"}, {"type": "null"}],
+            "default": None,
+            "title": "Requested Effect",
+        },
+    }
     assert exchange_item_tool.args == {
         "item_id": {"title": "Item Id", "type": "string"},
         "price": {"title": "Price", "type": "integer"},
@@ -203,7 +221,7 @@ def test_craft_item_tool_returns_internal_dataclass() -> None:
     store = LangGraphStoreAdapter(InMemoryStore())
     result = craft_item_tool.invoke(
         {
-            "recipe": "potion",
+            "category": "consumable",
             "craft_item": craft_item_and_store_reward,
             "random": FixedRandom(d20=[6]),
             "game_state": GameStateRepository(store),
@@ -213,6 +231,7 @@ def test_craft_item_tool_returns_internal_dataclass() -> None:
     assert isinstance(result, ToolResult)
     assert result.raw["success"] is False
     assert result.raw["item_name"] == "healing_potion"
+    assert result.raw["display_name"] == "회복 포션"
     assert result.raw["inventory_delta"] is None
     assert result.metadata["system_event"] == "tool.craft.completed"
 

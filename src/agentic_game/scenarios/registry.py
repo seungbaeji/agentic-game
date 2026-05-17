@@ -164,11 +164,11 @@ def make_quest_wrapper(store: StorePort):
     )
 
 
-def make_dialogue_wrapper(store: StorePort):
+def make_dialogue_wrapper(store: StorePort, llm: LLMPort):
     """Create the parent node that invokes and persists the dialogue subgraph."""
     return make_simple_subgraph_wrapper(
         store=store,
-        graph=build_dialogue_subgraph(store),
+        graph=build_dialogue_subgraph(store, llm),
         subgraph=SubgraphName.DIALOGUE,
         initial_phase=DialoguePhase.GREETING,
     )

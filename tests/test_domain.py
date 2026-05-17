@@ -3,7 +3,7 @@ from __future__ import annotations
 import pytest
 
 from agentic_game.domain.battle import BattleOutcome, resolve_battle_result
-from agentic_game.domain.craft import craft_result
+from agentic_game.domain.craft import CraftCategory, craft_result
 
 
 @pytest.mark.parametrize(
@@ -35,26 +35,43 @@ def test_resolve_battle_result(
 
 
 @pytest.mark.parametrize(
-    ("recipe", "dice", "item_name", "success", "bonus"),
+    ("category", "dice", "item_name", "display_name", "success", "bonus"),
     [
-        ("potion", 7, "healing_potion", True, False),
-        ("potion", 6, "healing_potion", False, False),
-        ("sword", 13, "old_sword", True, False),
-        ("sword", 19, "old_sword", True, True),
-        ("unknown", 20, "unknown", False, False),
+        (CraftCategory.CONSUMABLE, 7, "healing_potion", "회복 포션", True, False),
+        (CraftCategory.CONSUMABLE, 6, "healing_potion", "회복 포션", False, False),
+        (CraftCategory.WEAPON, 13, "old_sword", "낡은 검", True, False),
+        (CraftCategory.WEAPON, 19, "old_sword", "낡은 검", True, True),
+        (CraftCategory.TOOL, 10, "utility_tool", "도구", True, False),
     ],
 )
 def test_craft_result(
-    recipe: str,
+    category: CraftCategory,
     dice: int,
     item_name: str,
+    display_name: str,
     success: bool,
     bonus: bool,
 ) -> None:
-    result = craft_result(recipe=recipe, dice=dice)
+    result = craft_result(category=category, dice=dice)
 
-    assert result.recipe == recipe
+    assert result.category == category
     assert result.item_name == item_name
+    assert result.display_name == display_name
     assert result.dice == dice
     assert result.success is success
     assert result.bonus is bonus
+
+
+def test_craft_result_preserves_llm_item_details() -> None:
+    result = craft_result(
+        category=CraftCategory.WEAPON,
+        item_name="flame_dagger",
+        display_name="불꽃 단검",
+        requested_effect="burn",
+        dice=13,
+    )
+
+    assert result.item_name == "flame_dagger"
+    assert result.display_name == "불꽃 단검"
+    assert result.requested_effect == "burn"
+    assert result.success is True

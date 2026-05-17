@@ -60,20 +60,24 @@ def test_craft_flow_exposes_only_current_phase_actions() -> None:
     actions = serialize_craft_actions(CraftPhase.CRAFT)
 
     assert {action["event"] for action in actions} == {
-        CraftEvent.CRAFT_POTION.value,
-        CraftEvent.CRAFT_SWORD.value,
+        CraftEvent.CRAFT_CONSUMABLE.value,
+        CraftEvent.CRAFT_WEAPON.value,
+        CraftEvent.CRAFT_ARMOR.value,
+        CraftEvent.CRAFT_ACCESSORY.value,
+        CraftEvent.CRAFT_TOOL.value,
+        CraftEvent.CRAFT_MATERIAL.value,
     }
-    potion = next(
-        action for action in actions if action["event"] == CraftEvent.CRAFT_POTION
+    consumable = next(
+        action for action in actions if action["event"] == CraftEvent.CRAFT_CONSUMABLE
     )
-    assert potion["tool_name"] == "craft_item_tool"
-    assert potion["state_effect"] == (
-        "healing_potion can be added to inventory on success."
+    assert consumable["tool_name"] == "craft_item_tool"
+    assert consumable["state_effect"] == (
+        "consumable item can be added to inventory on success."
     )
 
 
 def test_craft_flow_resolves_allowed_transition() -> None:
-    rule = resolve_craft_transition(CraftPhase.CRAFT, CraftEvent.CRAFT_POTION)
+    rule = resolve_craft_transition(CraftPhase.CRAFT, CraftEvent.CRAFT_WEAPON)
 
     assert rule is not None
     assert rule.to_phase == CraftPhase.RESULT
@@ -83,8 +87,11 @@ def test_craft_flow_rejects_unavailable_transition() -> None:
     assert resolve_craft_transition(CraftPhase.SELECT_RECIPE, CraftEvent.RETRY) is None
 
 
-def test_craft_flow_allows_direct_recipe_from_select_recipe() -> None:
-    rule = resolve_craft_transition(CraftPhase.SELECT_RECIPE, CraftEvent.CRAFT_POTION)
+def test_craft_flow_allows_direct_category_from_select_recipe() -> None:
+    rule = resolve_craft_transition(
+        CraftPhase.SELECT_RECIPE,
+        CraftEvent.CRAFT_CONSUMABLE,
+    )
 
     assert rule is not None
     assert rule.to_phase == CraftPhase.RESULT

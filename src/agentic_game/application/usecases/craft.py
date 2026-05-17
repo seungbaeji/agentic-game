@@ -21,12 +21,20 @@ class CraftItemResult:
     inventory: InventoryState | None = None
 
     @property
-    def recipe(self) -> str:
-        return self.craft.recipe
+    def category(self) -> str:
+        return self.craft.category
 
     @property
     def item_name(self) -> str:
         return self.craft.item_name
+
+    @property
+    def display_name(self) -> str:
+        return self.craft.display_name
+
+    @property
+    def requested_effect(self) -> str | None:
+        return self.craft.requested_effect
 
     @property
     def dice(self) -> int:
@@ -42,23 +50,41 @@ class CraftItemResult:
 
 
 def craft_item(
-    recipe: str,
+    category: str,
     *,
+    item_name: str | None = None,
+    display_name: str | None = None,
+    requested_effect: str | None = None,
     random: RandomPort,
 ) -> CraftItemResult:
     """Run the craft item use case with injected randomness."""
-    result = craft_result(recipe=recipe, dice=random.roll_d20())
+    result = craft_result(
+        category=category,
+        item_name=item_name,
+        display_name=display_name,
+        requested_effect=requested_effect,
+        dice=random.roll_d20(),
+    )
     return CraftItemResult(craft=result)
 
 
 def craft_item_and_store_reward(
-    recipe: str,
+    category: str,
     *,
+    item_name: str | None = None,
+    display_name: str | None = None,
+    requested_effect: str | None = None,
     random: RandomPort,
     game_state: GameStateRepository,
 ) -> CraftItemResult:
     """Run crafting and persist the crafted item when the attempt succeeds."""
-    result = craft_result(recipe=recipe, dice=random.roll_d20())
+    result = craft_result(
+        category=category,
+        item_name=item_name,
+        display_name=display_name,
+        requested_effect=requested_effect,
+        dice=random.roll_d20(),
+    )
     if not result.success:
         return CraftItemResult(craft=result)
 

@@ -1,5 +1,10 @@
 from __future__ import annotations
 
+from agentic_game.agent.decisions import CraftDecision, DialogueDecision
+from agentic_game.agent.nodes.parent import (
+    describe_available_work,
+    generate_cli_startup_message,
+)
 from agentic_game.application.content_generation import BattleNarration, CraftNarration
 from agentic_game.bootstrap import build_agent_graph, build_container
 from agentic_game.config.settings import Settings
@@ -93,7 +98,47 @@ def test_agent_graph_describes_capabilities_without_internal_reason() -> None:
     assert "The user asked" not in result["response"]
 
 
-def test_agent_graph_asks_recipe_when_craft_intent_is_vague() -> None:
+def test_agent_graph_uses_llm_for_capability_response() -> None:
+    llm = TestingLLMAdapter(responses=["무엇을 해볼까요? 전투나 제작부터 시작할 수 있어요."])
+    container = build_container(
+        settings=Settings(_env_file=None),
+        llm=llm,
+        random=FixedRandom(d20=[]),
+    )
+    graph = build_agent_graph(container)
+
+    result = graph.invoke(
+        {
+            "user_input": "뭘 할 수 있어?",
+            "store_refs": {},
+        }
+    )
+
+    assert result["response"] == "무엇을 해볼까요? 전투나 제작부터 시작할 수 있어요."
+
+
+def test_cli_startup_message_uses_llm_when_available() -> None:
+    llm = TestingLLMAdapter(responses=["어서 오세요. 무엇부터 해볼까요?"])
+
+    assert (
+        generate_cli_startup_message(llm, exit_commands=("exit", "quit", "q", "종료"))
+        == "어서 오세요. 무엇부터 해볼까요?"
+    )
+
+
+def test_cli_startup_message_falls_back_when_llm_is_empty() -> None:
+    llm = TestingLLMAdapter()
+
+    message = generate_cli_startup_message(
+        llm,
+        exit_commands=("exit", "quit", "q", "종료"),
+    )
+
+    assert message == describe_available_work(include_exit_hint=True)
+    assert "무엇부터 해볼까요?" in message
+
+
+def test_agent_graph_asks_item_details_when_craft_intent_is_vague() -> None:
     llm = TestingLLMAdapter()
     container = build_container(
         settings=Settings(_env_file=None),
@@ -109,7 +154,10 @@ def test_agent_graph_asks_recipe_when_craft_intent_is_vague() -> None:
         }
     )
 
-    assert result["response"] == "제작할 아이템을 선택해 주세요. 가능한 선택: 포션 / 검"
+    assert result["response"] == (
+        "제작할 아이템을 알려 주세요. 범주: 소모품 / 무기 / 방어구 / 장신구 / 도구 / 재료. "
+        "예: 회복 포션, 불꽃 단검, 튼튼한 방패, 유적 열쇠"
+    )
 
 
 def test_agent_graph_keeps_craft_context_for_recipe_and_followup() -> None:
@@ -140,9 +188,12 @@ def test_agent_graph_keeps_craft_context_for_recipe_and_followup() -> None:
         }
     )
 
-    assert first["response"] == "제작할 아이템을 선택해 주세요. 가능한 선택: 포션 / 검"
-    assert second["response"] == "potion 제작 성공"
-    assert third["response"] == "방금 제작한 potion은 healing_potion입니다."
+    assert first["response"] == (
+        "제작할 아이템을 알려 주세요. 범주: 소모품 / 무기 / 방어구 / 장신구 / 도구 / 재료. "
+        "예: 회복 포션, 불꽃 단검, 튼튼한 방패, 유적 열쇠"
+    )
+    assert second["response"] == "회복 포션 제작 성공"
+    assert third["response"] == "방금 제작한 회복 포션은 소모품 범주의 아이템이고, 의도한 효과는 healing입니다."
 
 
 def test_agent_graph_continues_craft_after_recipe_selection() -> None:
@@ -167,8 +218,11 @@ def test_agent_graph_continues_craft_after_recipe_selection() -> None:
         }
     )
 
-    assert first["response"] == "제작할 아이템을 선택해 주세요. 가능한 선택: 포션 / 검"
-    assert second["response"] == "potion 제작 성공"
+    assert first["response"] == (
+        "제작할 아이템을 알려 주세요. 범주: 소모품 / 무기 / 방어구 / 장신구 / 도구 / 재료. "
+        "예: 회복 포션, 불꽃 단검, 튼튼한 방패, 유적 열쇠"
+    )
+    assert second["response"] == "회복 포션 제작 성공"
 
     saved_state = container.store.get(namespace=("craft", "state"), key="latest")
     assert saved_state["latest_refs"]["result.raw"] == "store://craft/result/raw/latest"
@@ -177,6 +231,62 @@ def test_agent_graph_continues_craft_after_recipe_selection() -> None:
     inventory = container.store.get(namespace=("game", "inventory"), key="latest")
     assert inventory.items[0].item_id == "healing_potion"
     assert inventory.items[0].quantity == 1
+
+
+def test_agent_graph_uses_llm_craft_plan_for_custom_item() -> None:
+    llm = TestingLLMAdapter(
+        structured_outputs={
+            CraftDecision: [
+                {
+                    "intent": "action",
+                    "event": "craft_weapon",
+                    "craft_plan": {
+                        "category": "weapon",
+                        "item_name": "flame_dagger",
+                        "display_name": "불꽃 단검",
+                        "requested_effect": "burn",
+                    },
+                    "reason": "사용자가 불꽃 단검 제작을 요청했습니다.",
+                }
+            ]
+        }
+    )
+    container = build_container(
+        settings=Settings(_env_file=None),
+        llm=llm,
+        random=FixedRandom(d20=[13]),
+    )
+    graph = build_agent_graph(container)
+
+    first = graph.invoke(
+        {
+            "user_input": "제작하고 싶어",
+            "store_refs": {},
+        }
+    )
+    second = graph.invoke(
+        {
+            "user_input": "불꽃 단검을 만들래",
+            "store_refs": first["store_refs"],
+        }
+    )
+
+    assert second["response"] == "불꽃 단검 제작 성공"
+
+    saved_state = container.store.get(namespace=("craft", "state"), key="latest")
+    assert saved_state["event"] == "craft_weapon"
+    assert saved_state["craft_plan"] == {
+        "category": "weapon",
+        "item_name": "flame_dagger",
+        "display_name": "불꽃 단검",
+        "requested_effect": "burn",
+    }
+
+    craft_raw = container.store.get(namespace=("craft", "result", "raw"), key="latest")
+    assert craft_raw["category"] == "weapon"
+    assert craft_raw["item_name"] == "flame_dagger"
+    assert craft_raw["display_name"] == "불꽃 단검"
+    assert craft_raw["requested_effect"] == "burn"
 
 
 def test_agent_graph_uses_llm_craft_narration_without_changing_state() -> None:
@@ -378,7 +488,10 @@ def test_agent_graph_routes_dialogue_and_keeps_context_until_reward() -> None:
     )
 
     assert first["response"] == "대화 선택지를 골라 주세요. 가능한 선택: 소문 묻기 / 거래 묻기 / 감사 / 보상 / 떠나기"
-    assert second["response"] == "NPC가 오래된 유적에 대한 소문을 들려줬습니다."
+    assert second["response"] == (
+        "NPC는 북쪽의 오래된 유적에서 밤마다 푸른 빛이 새어 나오고, "
+        "가끔 낮은 종소리가 들린다는 소문을 들려줬습니다."
+    )
     assert third["response"] == "NPC가 감사의 표시로 작은 보상을 준비했습니다."
     assert "dialogue_state" in third["store_refs"]
 
@@ -394,6 +507,52 @@ def test_agent_graph_routes_dialogue_and_keeps_context_until_reward() -> None:
         "old_ruins_rumor",
         "received_thanks",
     )
+
+
+def test_agent_graph_answers_dialogue_followup_without_advancing_flow() -> None:
+    llm = TestingLLMAdapter(
+        structured_outputs={
+            DialogueDecision: [
+                {
+                    "intent": "question",
+                    "response": "북쪽 유적에서 밤마다 푸른 빛과 낮은 종소리가 난다는 소문입니다.",
+                    "reason": "사용자가 직전 소문에 대한 후속 질문을 했습니다.",
+                }
+            ],
+        }
+    )
+    container = build_container(
+        settings=Settings(_env_file=None),
+        llm=llm,
+        random=FixedRandom(d20=[]),
+    )
+    graph = build_agent_graph(container)
+
+    first = graph.invoke(
+        {
+            "user_input": "NPC와 대화하고 싶어",
+            "store_refs": {},
+        }
+    )
+    second = graph.invoke(
+        {
+            "user_input": "소문을 물어볼게",
+            "store_refs": first["store_refs"],
+        }
+    )
+    third = graph.invoke(
+        {
+            "user_input": "어떤 소문인데?",
+            "store_refs": second["store_refs"],
+        }
+    )
+
+    assert third["response"] == "북쪽 유적에서 밤마다 푸른 빛과 낮은 종소리가 난다는 소문입니다."
+
+    saved_state = container.store.get(namespace=("dialogue", "state"), key="latest")
+    assert saved_state["phase"] == "react"
+    assert saved_state["event"] == "ask_rumor"
+    assert saved_state["input_intent"] == "question"
 
 
 def test_agent_graph_routes_skill_training_and_keeps_context_until_level_up() -> None:

@@ -43,8 +43,10 @@ def battle_result_to_tool_result(result: BattleActionResult) -> ToolResult:
 def craft_result_to_tool_result(result: CraftItemResult) -> ToolResult:
     """Project a craft domain result into raw, LLM, UI, and metadata payloads."""
     raw = {
-        "recipe": result.recipe,
+        "category": result.category,
         "item_name": result.item_name,
+        "display_name": result.display_name,
+        "requested_effect": result.requested_effect,
         "dice": result.dice,
         "success": result.success,
         "bonus": result.bonus,
@@ -61,8 +63,11 @@ def craft_result_to_tool_result(result: CraftItemResult) -> ToolResult:
     return ToolResult(
         raw=raw,
         llm={
-            "summary": f"{result.recipe} 제작 {'성공' if result.success else '실패'}",
+            "summary": f"{result.display_name} 제작 {'성공' if result.success else '실패'}",
+            "category": result.category,
             "item_name": result.item_name,
+            "display_name": result.display_name,
+            "requested_effect": result.requested_effect,
             "success": result.success,
             "bonus": result.bonus,
         },

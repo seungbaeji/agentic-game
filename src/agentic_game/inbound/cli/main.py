@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from agentic_game.agent.nodes.parent import generate_cli_startup_message
 from agentic_game.bootstrap import build_agent_graph, get_container
 from agentic_game.errors import AgenticGameError
 
@@ -21,7 +22,12 @@ def main() -> None:
     graph = build_agent_graph(container)
     store_refs: dict[str, str] = {}
 
-    print("agentic-game CLI를 시작합니다. 종료하려면 exit, quit, q, 종료 중 하나를 입력하세요.")
+    print(
+        generate_cli_startup_message(
+            container.llm,
+            exit_commands=tuple(sorted(EXIT_COMMANDS)),
+        )
+    )
 
     while True:
         try:

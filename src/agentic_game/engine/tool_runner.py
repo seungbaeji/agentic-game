@@ -152,6 +152,7 @@ def execute_craft_tool(
         binding=binding,
         tool=craft_item_tool,
         injected_input={
+            **state.get("craft_plan", {}),
             "craft_item": craft_item,
             "random": random,
             "game_state": GameStateRepository(store),

@@ -144,11 +144,59 @@ def detect_battle_event(phase: BattlePhase, user_text: str) -> BattleEvent | Non
 
 
 def detect_craft_event(phase: CraftPhase, user_text: str) -> CraftEvent | None:
-    """Detect a craft event from explicit recipe keywords."""
+    """Detect a craft event from explicit category keywords."""
     available_events = {action["event"] for action in serialize_craft_actions(phase)}
     event_by_keywords = {
-        CraftEvent.CRAFT_POTION: ("potion", "포션", "회복 물약"),
-        CraftEvent.CRAFT_SWORD: ("sword", "검", "칼"),
+        CraftEvent.CRAFT_CONSUMABLE: (
+            "potion",
+            "food",
+            "scroll",
+            "bomb",
+            "포션",
+            "물약",
+            "음식",
+            "스크롤",
+            "폭탄",
+        ),
+        CraftEvent.CRAFT_WEAPON: (
+            "weapon",
+            "sword",
+            "dagger",
+            "bow",
+            "staff",
+            "arrow",
+            "무기",
+            "검",
+            "칼",
+            "단검",
+            "활",
+            "지팡이",
+            "화살",
+        ),
+        CraftEvent.CRAFT_ARMOR: ("armor", "shield", "helmet", "갑옷", "방패", "투구"),
+        CraftEvent.CRAFT_ACCESSORY: (
+            "accessory",
+            "ring",
+            "necklace",
+            "charm",
+            "장신구",
+            "반지",
+            "목걸이",
+            "부적",
+        ),
+        CraftEvent.CRAFT_TOOL: ("tool", "key", "pickaxe", "도구", "열쇠", "곡괭이"),
+        CraftEvent.CRAFT_MATERIAL: (
+            "material",
+            "ingot",
+            "leather",
+            "essence",
+            "재료",
+            "주괴",
+            "가죽",
+            "정수",
+        ),
+        CraftEvent.RETRY: ("retry", "다시", "재시도"),
+        CraftEvent.COMPLETE: ("complete", "완료", "끝", "그만"),
     }
     return _detect_event(event_by_keywords, available_events, user_text)
 

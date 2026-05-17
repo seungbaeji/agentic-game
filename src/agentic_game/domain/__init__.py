@@ -6,7 +6,13 @@ from agentic_game.domain.battle import (
     BattleResult,
     resolve_battle_result,
 )
-from agentic_game.domain.craft import CraftEvent, CraftPhase, CraftResult, Recipe, craft_result
+from agentic_game.domain.craft import (
+    CraftCategory,
+    CraftEvent,
+    CraftPhase,
+    CraftResult,
+    craft_result,
+)
 
 __all__ = [
     "BattleAction",
@@ -14,10 +20,10 @@ __all__ = [
     "BattleOutcome",
     "BattlePhase",
     "BattleResult",
+    "CraftCategory",
     "CraftEvent",
     "CraftPhase",
     "CraftResult",
-    "Recipe",
     "craft_result",
     "resolve_battle_result",
 ]
