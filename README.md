@@ -1,8 +1,8 @@
 # agentic-game
 
-LangGraph 기반 전투/제작 샘플 에이전트입니다.
+LangGraph 기반 게임 시나리오 에이전트입니다.
 
-이 프로젝트는 hexagonal architecture를 바탕으로 구성되어 있습니다. 도메인 규칙, 애플리케이션 usecase, LangGraph agent runtime, inbound interface, outbound adapter를 분리해서 CLI뿐 아니라 REST API나 UI에서도 같은 usecase와 agent 구성을 재사용할 수 있게 만드는 것이 목표입니다.
+이 프로젝트는 phase/event 기반 게임 시나리오를 LangGraph로 실행하는 구조를 검증합니다. 도메인 규칙, 업무 flow, 시나리오 정의, 실행 engine, LangGraph agent 조립, inbound/outbound adapter를 분리해서 새 게임 도메인을 추가해도 runtime 구조를 크게 바꾸지 않도록 만드는 것이 목표입니다.
 
 ## 문서
 
@@ -19,10 +19,12 @@ uv run --group docs agentic-game-docs serve
 
 ```text
 src/agentic_game/
-  domain/       # 순수 비즈니스 데이터와 규칙
-  flow/         # usecase 이전의 업무 흐름 규칙과 phase/event transition
+  domain/       # 게임 데이터, phase/event enum, 순수 도메인 규칙
+  flow/         # phase/event transition과 flow helper
+  scenarios/    # ScenarioSpec 정의, scenario intent, parent routing, graph 등록
+  engine/       # subgraph 실행, persistence wrapper, tool runner
   application/  # usecase와 port
-  agent/        # LangGraph graph, node, runtime, prompt, routing
+  agent/        # LangGraph graph/node 조립, prompt, routing
   tools/        # LLM이 호출할 @tool 계층
   inbound/      # CLI, 향후 REST API/UI 같은 interface
   outbound/     # LLM, store, random 등 외부 adapter
@@ -58,10 +60,29 @@ src/agentic_game/
 각 파일의 책임은 다음과 같습니다.
 
 - `flow/`: 업무 규칙을 정의합니다. `PREPARE + ATTACK -> RESOLVE`처럼 phase/event 전이를 다루며 LangGraph node를 모릅니다.
+- `scenarios/`: 어떤 게임 시나리오가 있는지, 사용자 입력을 scenario/event로 어떻게 해석하는지, parent graph에 어떤 scenario를 등록하는지 설명합니다.
+- `engine/`: subgraph 실행, state persistence, tool 실행처럼 scenario를 실제로 돌리는 공통 실행기를 둡니다.
 - `agent/routing.py`: 업무 phase를 LangGraph node로 변환합니다. `RESOLVE -> EXECUTE`, `ACTION -> HITL` 같은 runtime 결정을 둡니다.
 - `agent/transitions.py`: LangGraph node 간 edge table입니다. `FLOW -> EXECUTE | HITL | RESPONSE`처럼 graph가 실제로 이동할 수 있는 경로를 선언합니다.
 - `agent/graph/`: `StateGraph`를 만들고 node와 edge table을 조립합니다. node 내부 로직은 알지 않습니다.
 - `agent/nodes/`: LangGraph가 호출하는 얇은 실행 단위입니다. state를 읽고 decision/flow/runtime에 위임한 뒤 다음 state update를 반환합니다.
+
+`scenarios/` 내부 경계는 다음과 같습니다.
+
+```text
+scenarios/
+  spec.py          # 공통 ScenarioSpec / ScenarioNode
+  definitions.py   # 각 게임 시나리오의 ScenarioSpec 정의
+  registry.py      # parent graph에 concrete scenario 연결
+  router.py        # parent-level intent routing
+  battle.py        # battle 내부 event intent
+  craft.py         # craft 내부 event intent
+  exploration.py   # exploration 내부 event intent
+  quest.py
+  trade.py
+  dialogue.py
+  skill_training.py
+```
 
 예를 들어 전투에서 `몬스터를 공격할게`를 입력하면 다음처럼 흐릅니다.
 
