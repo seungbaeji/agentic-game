@@ -17,8 +17,8 @@ from agentic_game.engine.tool_runner import ToolInvoker, execute_craft_tool
 from agentic_game.flow.craft import (
     serialize_craft_actions,
 )
-from agentic_game.scenarios.catalog import CRAFT_SCENARIO
 from agentic_game.scenarios.craft import infer_craft_event
+from agentic_game.scenarios.definitions import CRAFT_SCENARIO
 
 _craft_flow_node = make_flow_node(
     spec=CRAFT_SCENARIO,

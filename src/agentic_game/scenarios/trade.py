@@ -1,3 +1,5 @@
+"""Trade-specific user intent rules."""
+
 from __future__ import annotations
 
 from agentic_game.domain.trade import TradeEvent, TradePhase

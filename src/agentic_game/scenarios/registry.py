@@ -1,3 +1,5 @@
+"""Parent graph registration for concrete game scenarios."""
+
 from __future__ import annotations
 
 from collections.abc import Callable

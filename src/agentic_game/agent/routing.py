@@ -3,7 +3,7 @@ from __future__ import annotations
 from agentic_game.agent.models import BattleNode, CraftNode
 from agentic_game.domain.battle import BattlePhase
 from agentic_game.domain.craft import CraftPhase
-from agentic_game.scenarios.catalog import BATTLE_SCENARIO, CRAFT_SCENARIO
+from agentic_game.scenarios.definitions import BATTLE_SCENARIO, CRAFT_SCENARIO
 from agentic_game.scenarios.spec import ScenarioNode, ScenarioSpec
 
 _BATTLE_NODE_BY_SCENARIO_NODE = {

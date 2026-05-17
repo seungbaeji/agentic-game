@@ -9,7 +9,7 @@ from agentic_game.agent.nodes.scenario_nodes import (
 from agentic_game.agent.state import TradeState
 from agentic_game.domain.trade import TradeEvent, TradePhase
 from agentic_game.flow.trade import serialize_trade_actions
-from agentic_game.scenarios.catalog import TRADE_SCENARIO
+from agentic_game.scenarios.definitions import TRADE_SCENARIO
 from agentic_game.scenarios.spec import ScenarioNode
 from agentic_game.scenarios.trade import infer_trade_event
 

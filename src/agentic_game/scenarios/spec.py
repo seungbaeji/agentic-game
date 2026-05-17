@@ -1,3 +1,5 @@
+"""Common scenario model shared by all game scenarios."""
+
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence

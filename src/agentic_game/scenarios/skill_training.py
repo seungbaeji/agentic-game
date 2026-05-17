@@ -1,3 +1,5 @@
+"""Skill-training-specific user intent rules."""
+
 from __future__ import annotations
 
 from agentic_game.domain.skill_training import SkillTrainingEvent, SkillTrainingPhase

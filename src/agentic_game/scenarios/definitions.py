@@ -1,3 +1,5 @@
+"""ScenarioSpec definitions for each supported game scenario."""
+
 from __future__ import annotations
 
 from agentic_game.domain.battle import BattleEvent, BattlePhase

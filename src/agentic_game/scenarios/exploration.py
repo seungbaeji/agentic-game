@@ -1,3 +1,5 @@
+"""Exploration-specific user intent rules."""
+
 from __future__ import annotations
 
 from agentic_game.domain.exploration import ExplorationEvent, ExplorationPhase
