@@ -3,8 +3,6 @@ from __future__ import annotations
 from typing import TypedDict
 
 from agentic_game.agent.models import (
-    BattleNode,
-    CraftNode,
     ParentNode,
     SubgraphName,
 )
@@ -24,13 +22,34 @@ from agentic_game.domain.craft import (
     CraftEvent,
     CraftPhase,
 )
+from agentic_game.domain.dialogue import (
+    DialogueEvent,
+    DialoguePhase,
+)
+from agentic_game.domain.exploration import (
+    ExplorationEvent,
+    ExplorationPhase,
+)
+from agentic_game.domain.quest import (
+    QuestEvent,
+    QuestPhase,
+)
+from agentic_game.domain.skill_training import (
+    SkillTrainingEvent,
+    SkillTrainingPhase,
+)
+from agentic_game.domain.trade import (
+    TradeEvent,
+    TradePhase,
+)
 from agentic_game.flow.models import AvailableActions
+from agentic_game.scenarios.spec import ScenarioNode
 
 
 class ParentState(TypedDict, total=False):
     user_input: UserInput
     target_subgraph: SubgraphName
-    current_subgraph: SubgraphName
+    current_subgraph: SubgraphName | None
     store_refs: StoreRefs
     response: ResponseText
     reason: ReasonText
@@ -50,7 +69,7 @@ class BattleState(TypedDict, total=False):
     available_actions: AvailableActions
     response: ResponseText
     reason: ReasonText
-    next_node: BattleNode
+    next_node: ScenarioNode
 
 
 class CraftState(TypedDict, total=False):
@@ -59,6 +78,8 @@ class CraftState(TypedDict, total=False):
 
     phase: CraftPhase
     event: CraftEvent
+    craft_plan: dict[str, str | None]
+    input_intent: str
 
     latest_refs: StoreRefs
     history_refs: HistoryRefs
@@ -66,4 +87,87 @@ class CraftState(TypedDict, total=False):
     available_actions: AvailableActions
     response: ResponseText
     reason: ReasonText
-    next_node: CraftNode
+    next_node: ScenarioNode
+
+
+class ExplorationState(TypedDict, total=False):
+    user_input: UserInput
+    human_input: HumanInput
+
+    phase: ExplorationPhase
+    event: ExplorationEvent
+
+    latest_refs: StoreRefs
+    history_refs: HistoryRefs
+
+    available_actions: AvailableActions
+    response: ResponseText
+    reason: ReasonText
+    next_node: str
+
+
+class TradeState(TypedDict, total=False):
+    user_input: UserInput
+    human_input: HumanInput
+
+    phase: TradePhase
+    event: TradeEvent
+
+    latest_refs: StoreRefs
+    history_refs: HistoryRefs
+
+    available_actions: AvailableActions
+    response: ResponseText
+    reason: ReasonText
+    next_node: str
+
+
+class QuestState(TypedDict, total=False):
+    user_input: UserInput
+    human_input: HumanInput
+
+    phase: QuestPhase
+    event: QuestEvent
+
+    latest_refs: StoreRefs
+    history_refs: HistoryRefs
+
+    available_actions: AvailableActions
+    response: ResponseText
+    reason: ReasonText
+    next_node: str
+
+
+class DialogueState(TypedDict, total=False):
+    user_input: UserInput
+    human_input: HumanInput
+
+    phase: DialoguePhase
+    event: DialogueEvent
+    input_intent: str
+    last_topic: str
+
+    latest_refs: StoreRefs
+    history_refs: HistoryRefs
+
+    available_actions: AvailableActions
+    response: ResponseText
+    reason: ReasonText
+    next_node: str
+
+
+class SkillTrainingState(TypedDict, total=False):
+    user_input: UserInput
+    human_input: HumanInput
+
+    phase: SkillTrainingPhase
+    event: SkillTrainingEvent
+    selected_skill: str
+
+    latest_refs: StoreRefs
+    history_refs: HistoryRefs
+
+    available_actions: AvailableActions
+    response: ResponseText
+    reason: ReasonText
+    next_node: str

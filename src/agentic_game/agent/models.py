@@ -11,26 +11,13 @@ class ParentNode(StrEnum):
     NAVIGATE = "parent_navigate"
     BATTLE = "battle_subgraph"
     CRAFT = "craft_subgraph"
+    EXPLORATION = "exploration_subgraph"
+    TRADE = "trade_subgraph"
+    QUEST = "quest_subgraph"
+    DIALOGUE = "dialogue_subgraph"
+    SKILL_TRAINING = "skill_training_subgraph"
     RESPONSE = "parent_response"
     ASK_USER = "parent_ask_user"
-
-
-class BattleNode(StrEnum):
-    DECISION = "battle_decision"
-    FLOW = "battle_flow"
-    HITL = "battle_hitl"
-    EXECUTE = "battle_execute_tool"
-    RESPONSE = "battle_response"
-    ASK_USER = "battle_ask_user"
-
-
-class CraftNode(StrEnum):
-    DECISION = "craft_decision"
-    FLOW = "craft_flow"
-    HITL = "craft_hitl"
-    EXECUTE = "craft_execute_tool"
-    RESPONSE = "craft_response"
-    ASK_USER = "craft_ask_user"
 
 
 @dataclass(frozen=True)
@@ -53,5 +40,35 @@ SUBGRAPH_REGISTRY: dict[SubgraphName, SubgraphEntry] = {
         label="제작",
         description="아이템 제작을 시도하고 랜덤 성공/실패를 처리합니다.",
         node=ParentNode.CRAFT,
+    ),
+    SubgraphName.EXPLORATION: SubgraphEntry(
+        name=SubgraphName.EXPLORATION,
+        label="탐험",
+        description="갈림길을 선택하고 조우나 발견을 처리합니다.",
+        node=ParentNode.EXPLORATION,
+    ),
+    SubgraphName.TRADE: SubgraphEntry(
+        name=SubgraphName.TRADE,
+        label="거래",
+        description="아이템을 선택하고 가격 확인과 교환을 처리합니다.",
+        node=ParentNode.TRADE,
+    ),
+    SubgraphName.QUEST: SubgraphEntry(
+        name=SubgraphName.QUEST,
+        label="퀘스트",
+        description="퀘스트 수락, 진행, 보고, 완료 또는 실패를 처리합니다.",
+        node=ParentNode.QUEST,
+    ),
+    SubgraphName.DIALOGUE: SubgraphEntry(
+        name=SubgraphName.DIALOGUE,
+        label="대화",
+        description="NPC 대화 선택지, 반응, 보상 수령을 처리합니다.",
+        node=ParentNode.DIALOGUE,
+    ),
+    SubgraphName.SKILL_TRAINING: SubgraphEntry(
+        name=SubgraphName.SKILL_TRAINING,
+        label="스킬 훈련",
+        description="스킬 선택, 훈련 실행, 레벨 상승을 처리합니다.",
+        node=ParentNode.SKILL_TRAINING,
     ),
 }
