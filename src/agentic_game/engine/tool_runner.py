@@ -7,8 +7,10 @@ from agentic_game.agent.state import BattleState, CraftState
 from agentic_game.agent.types import PhasePayloadRefs, RuntimeState, ToolInput
 from agentic_game.application.game_state import GameStateRepository
 from agentic_game.application.ports import RandomPort, StorePort
-from agentic_game.domain.battle import BattleEvent, BattlePhase
-from agentic_game.domain.craft import CraftEvent, CraftPhase
+from agentic_game.domain.battle import BattlePhase
+from agentic_game.domain.craft import CraftPhase
+from agentic_game.flow.battle import BATTLE_TOOL_BINDINGS
+from agentic_game.flow.craft import CRAFT_TOOL_BINDINGS
 from agentic_game.scenarios.spec import ScenarioNode
 from agentic_game.tools.types import ToolResult
 
@@ -17,18 +19,6 @@ class ToolInvoker(Protocol):
     def invoke(self, input: ToolInput) -> ToolResult:
         """Invoke a hydrated LangChain tool and return its internal result."""
         ...
-
-
-_BATTLE_ACTION_BY_EVENT = {
-    BattleEvent.ATTACK: "attack",
-    BattleEvent.DEFEND: "defend",
-    BattleEvent.FLEE: "flee",
-}
-
-_CRAFT_RECIPE_BY_EVENT = {
-    CraftEvent.CRAFT_POTION: "potion",
-    CraftEvent.CRAFT_SWORD: "sword",
-}
 
 
 def persist_tool_result(
@@ -74,19 +64,21 @@ def execute_battle_tool(
 ) -> BattleState:
     """Invoke the battle tool and return the battle graph state update."""
     event = state["event"]
-    action = _BATTLE_ACTION_BY_EVENT.get(event)
-    if action is None:
+    binding = BATTLE_TOOL_BINDINGS.get(event)
+    if binding is None:
         return {
             "reason": f"tool로 실행할 수 없는 battle event입니다: {event}",
             "next_node": ScenarioNode.ASK_USER,
         }
 
-    tool_result = resolve_battle_tool.invoke({
-        "action": action,
-        "resolve_battle_action": resolve_battle_action,
-        "random": random,
-        "game_state": GameStateRepository(store),
-    })
+    tool_result = resolve_battle_tool.invoke(
+        {
+            **binding.tool_input,
+            "resolve_battle_action": resolve_battle_action,
+            "random": random,
+            "game_state": GameStateRepository(store),
+        }
+    )
     ref_update = persist_tool_result(
         store=store,
         state=state,
@@ -118,19 +110,21 @@ def execute_craft_tool(
 ) -> CraftState:
     """Invoke the craft tool and return the craft graph state update."""
     event = state["event"]
-    recipe = _CRAFT_RECIPE_BY_EVENT.get(event)
-    if recipe is None:
+    binding = CRAFT_TOOL_BINDINGS.get(event)
+    if binding is None:
         return {
             "reason": f"tool로 실행할 수 없는 craft event입니다: {event}",
             "next_node": ScenarioNode.ASK_USER,
         }
 
-    tool_result = craft_item_tool.invoke({
-        "recipe": recipe,
-        "craft_item": craft_item,
-        "random": random,
-        "game_state": GameStateRepository(store),
-    })
+    tool_result = craft_item_tool.invoke(
+        {
+            **binding.tool_input,
+            "craft_item": craft_item,
+            "random": random,
+            "game_state": GameStateRepository(store),
+        }
+    )
     ref_update = persist_tool_result(
         store=store,
         state=state,

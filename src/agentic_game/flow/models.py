@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Literal, TypedDict
@@ -34,3 +35,26 @@ class TransitionRule[PhaseT, EventT]:
     to_phase: PhaseT
     label: str
     description: str
+
+
+@dataclass(frozen=True)
+class ToolBinding[EventT]:
+    event: EventT
+    tool_name: str
+    tool_input: Mapping[str, object]
+    state_effect: str
+    risk: Literal["none", "read", "state_change"] = "state_change"
+
+
+def tool_action_metadata[EventT](
+    bindings: Mapping[EventT, ToolBinding[EventT]],
+) -> dict[EventT, ActionCard]:
+    """Return user-facing action metadata from executable tool bindings."""
+    return {
+        event: {
+            "tool_name": binding.tool_name,
+            "state_effect": binding.state_effect,
+            "risk": binding.risk,
+        }
+        for event, binding in bindings.items()
+    }
