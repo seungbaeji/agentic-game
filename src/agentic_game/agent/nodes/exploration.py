@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from agentic_game.agent.nodes.scenario import (
+from agentic_game.agent.nodes.scenario_nodes import (
     make_ask_user_node,
     make_decision_node,
     make_flow_node,
     make_hitl_node,
 )
-from agentic_game.agent.scenario import ScenarioNode
-from agentic_game.agent.scenarios import EXPLORATION_SCENARIO
 from agentic_game.agent.state import ExplorationState
 from agentic_game.domain.exploration import ExplorationEvent, ExplorationPhase
 from agentic_game.flow.exploration import serialize_exploration_actions
 from agentic_game.flow.intent import infer_exploration_event
+from agentic_game.scenarios.catalog import EXPLORATION_SCENARIO
+from agentic_game.scenarios.spec import ScenarioNode
 
 exploration_decision_node = make_decision_node(
     default_phase=ExplorationPhase.START,

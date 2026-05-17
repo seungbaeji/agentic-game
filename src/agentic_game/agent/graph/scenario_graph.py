@@ -6,7 +6,7 @@ from typing import Any
 
 from langgraph.graph import END, StateGraph
 
-from agentic_game.agent.scenario import ScenarioNode
+from agentic_game.scenarios.spec import ScenarioNode
 
 
 @dataclass(frozen=True)
@@ -20,7 +20,7 @@ class ScenarioGraphNodes:
 
 
 @dataclass(frozen=True)
-class ScenarioAdapter:
+class ScenarioGraphDefinition:
     state_schema: type[Any]
     node_names: type[Any]
     graph_nodes: ScenarioGraphNodes
@@ -81,8 +81,8 @@ def build_scenario_subgraph(
     return builder.compile()
 
 
-def build_scenario_adapter_subgraph(adapter: ScenarioAdapter):
-    """Build a scenario subgraph from a scenario adapter."""
+def build_scenario_definition_subgraph(adapter: ScenarioGraphDefinition):
+    """Build a scenario subgraph from a scenario graph definition."""
     return build_scenario_subgraph(
         state_schema=adapter.state_schema,
         node_names=adapter.node_names,
@@ -128,8 +128,8 @@ def build_simple_scenario_subgraph(
     decision_route: Callable[[Any], Any],
 ):
     """Build a subgraph for scenarios that use the standard ScenarioNode shape."""
-    return build_scenario_adapter_subgraph(
-        ScenarioAdapter(
+    return build_scenario_definition_subgraph(
+        ScenarioGraphDefinition(
             state_schema=state_schema,
             node_names=ScenarioNode,
             graph_nodes=graph_nodes,

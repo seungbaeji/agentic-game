@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from agentic_game.agent.nodes.scenario import (
+from agentic_game.agent.nodes.scenario_nodes import (
     make_ask_user_node,
     make_decision_node,
     make_flow_node,
     make_hitl_node,
 )
-from agentic_game.agent.scenario import ScenarioNode
-from agentic_game.agent.scenarios import TRADE_SCENARIO
 from agentic_game.agent.state import TradeState
 from agentic_game.domain.trade import TradeEvent, TradePhase
 from agentic_game.flow.intent import infer_trade_event
 from agentic_game.flow.trade import serialize_trade_actions
+from agentic_game.scenarios.catalog import TRADE_SCENARIO
+from agentic_game.scenarios.spec import ScenarioNode
 
 trade_decision_node = make_decision_node(
     default_phase=TradePhase.BROWSE,

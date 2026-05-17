@@ -3,8 +3,8 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from typing import Any
 
-from agentic_game.agent.scenario import ScenarioNode, ScenarioSpec
 from agentic_game.flow.transitions import resolve_transition, serialize_actions
+from agentic_game.scenarios.spec import ScenarioNode, ScenarioSpec
 
 type ScenarioState = dict[str, Any]
 

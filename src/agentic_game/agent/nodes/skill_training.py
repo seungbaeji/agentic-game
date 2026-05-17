@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from agentic_game.agent.nodes.scenario import (
+from agentic_game.agent.nodes.scenario_nodes import (
     make_ask_user_node,
     make_decision_node,
     make_flow_node,
     make_hitl_node,
 )
-from agentic_game.agent.scenario import ScenarioNode
-from agentic_game.agent.scenarios import SKILL_TRAINING_SCENARIO
 from agentic_game.agent.state import SkillTrainingState
 from agentic_game.domain.skill_training import SkillTrainingPhase
 from agentic_game.flow.intent import infer_skill_training_event
 from agentic_game.flow.skill_training import serialize_skill_training_actions
+from agentic_game.scenarios.catalog import SKILL_TRAINING_SCENARIO
+from agentic_game.scenarios.spec import ScenarioNode
 
 skill_training_decision_node = make_decision_node(
     default_phase=SkillTrainingPhase.SELECT_SKILL,

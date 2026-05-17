@@ -11,7 +11,13 @@ from agentic_game.agent.nodes.parent import (
     parent_ask_user_node,
     parent_route,
 )
-from agentic_game.agent.runtime.subgraph import (
+from agentic_game.agent.state import ParentState
+from agentic_game.agent.transitions import PARENT_DECISION_EDGES, PARENT_DIRECT_EDGES
+from agentic_game.application.ports import LLMPort, RandomPort, StorePort
+from agentic_game.domain.battle import BattleResult
+from agentic_game.domain.craft import CraftResult
+from agentic_game.engine.tool_runner import ToolInvoker
+from agentic_game.scenarios.registry import (
     make_battle_wrapper,
     make_craft_wrapper,
     make_dialogue_wrapper,
@@ -20,12 +26,6 @@ from agentic_game.agent.runtime.subgraph import (
     make_skill_training_wrapper,
     make_trade_wrapper,
 )
-from agentic_game.agent.runtime.tools import ToolInvoker
-from agentic_game.agent.state import ParentState
-from agentic_game.agent.transitions import PARENT_DECISION_EDGES, PARENT_DIRECT_EDGES
-from agentic_game.application.ports import LLMPort, RandomPort, StorePort
-from agentic_game.domain.battle import BattleResult
-from agentic_game.domain.craft import CraftResult
 
 SIMPLE_PARENT_WRAPPERS = {
     ParentNode.EXPLORATION: make_exploration_wrapper,

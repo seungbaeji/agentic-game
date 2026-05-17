@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from agentic_game.agent.nodes.scenario import (
+from agentic_game.agent.nodes.scenario_nodes import (
     make_ask_user_node,
     make_decision_node,
     make_flow_node,
     make_hitl_node,
 )
-from agentic_game.agent.scenario import ScenarioNode
-from agentic_game.agent.scenarios import QUEST_SCENARIO
 from agentic_game.agent.state import QuestState
 from agentic_game.domain.quest import QuestEvent, QuestPhase
 from agentic_game.flow.intent import infer_quest_event
 from agentic_game.flow.quest import serialize_quest_actions
+from agentic_game.scenarios.catalog import QUEST_SCENARIO
+from agentic_game.scenarios.spec import ScenarioNode
 
 quest_decision_node = make_decision_node(
     default_phase=QuestPhase.AVAILABLE,

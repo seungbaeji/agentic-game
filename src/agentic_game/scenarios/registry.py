@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Protocol
 
 from agentic_game.agent.graph.battle import build_battle_subgraph
 from agentic_game.agent.graph.craft import build_craft_subgraph
@@ -11,7 +10,6 @@ from agentic_game.agent.graph.quest import build_quest_subgraph
 from agentic_game.agent.graph.skill_training import build_skill_training_subgraph
 from agentic_game.agent.graph.trade import build_trade_subgraph
 from agentic_game.agent.models import ParentNode, SubgraphName
-from agentic_game.agent.runtime.tools import ToolInvoker
 from agentic_game.agent.state import CraftState, ParentState
 from agentic_game.agent.types import RuntimePayload, StoreRefs
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
@@ -22,26 +20,9 @@ from agentic_game.domain.exploration import ExplorationPhase
 from agentic_game.domain.quest import QuestPhase
 from agentic_game.domain.skill_training import SkillTrainingPhase
 from agentic_game.domain.trade import TradePhase
+from agentic_game.engine.subgraph import make_simple_subgraph_wrapper, make_subgraph_wrapper
+from agentic_game.engine.tool_runner import ToolInvoker
 from agentic_game.flow.craft import answer_craft_result_question
-
-
-class InvokableGraph(Protocol):
-    def invoke(self, input: RuntimePayload) -> RuntimePayload:
-        """Run a compiled graph with runtime state."""
-        ...
-
-
-type BeforeInvokeHook = Callable[
-    [StorePort, RuntimePayload, ParentState, StoreRefs],
-    ParentState | None,
-]
-
-
-def remove_runtime_routing(state: RuntimePayload) -> RuntimePayload:
-    """Remove routing-only keys before persisting graph state."""
-    persisted_state = dict(state)
-    persisted_state.pop("next_node", None)
-    return persisted_state
 
 
 def load_latest_craft_result(
@@ -62,79 +43,6 @@ def load_latest_craft_result(
         return None
 
     return latest_result
-
-
-def make_subgraph_wrapper(
-    *,
-    store: StorePort,
-    graph: InvokableGraph,
-    subgraph: SubgraphName,
-    state_ref_key: str,
-    state_namespace: tuple[str, str],
-    initial_state: RuntimePayload,
-    before_invoke: BeforeInvokeHook | None = None,
-):
-    """Create a parent node that loads, invokes, and persists a subgraph."""
-
-    def subgraph_node(state: ParentState) -> ParentState:
-        refs = dict(state.get("store_refs", {}))
-        state_ref = refs.get(state_ref_key)
-
-        if state_ref:
-            saved_state = store.get(namespace=state_namespace, key="latest")
-        else:
-            saved_state = dict(initial_state)
-
-        if before_invoke is not None:
-            hook_result = before_invoke(store, saved_state, state, refs)
-            if hook_result is not None:
-                return hook_result
-
-        subgraph_state = {
-            **saved_state,
-            "user_input": state.get("user_input", ""),
-            "human_input": state.get("user_input", ""),
-        }
-
-        result = graph.invoke(subgraph_state)
-
-        refs[state_ref_key] = store.put(
-            namespace=state_namespace,
-            key="latest",
-            value=remove_runtime_routing(result),
-        )
-
-        return {
-            "current_subgraph": subgraph,
-            "store_refs": refs,
-            "response": result.get("response", ""),
-            "next_node": ParentNode.RESPONSE,
-        }
-
-    return subgraph_node
-
-
-def make_simple_subgraph_wrapper(
-    *,
-    store: StorePort,
-    graph: InvokableGraph,
-    subgraph: SubgraphName,
-    initial_phase: object,
-):
-    """Create a wrapper for a scenario with standard state persistence keys."""
-    subgraph_name = subgraph.value
-    return make_subgraph_wrapper(
-        store=store,
-        graph=graph,
-        subgraph=subgraph,
-        state_ref_key=f"{subgraph_name}_state",
-        state_namespace=(subgraph_name, "state"),
-        initial_state={
-            "phase": initial_phase,
-            "latest_refs": {},
-            "history_refs": {},
-        },
-    )
 
 
 def make_battle_wrapper(

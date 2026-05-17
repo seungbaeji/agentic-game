@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from agentic_game.agent.scenario import ScenarioNode, ScenarioSpec
 from agentic_game.domain.battle import BattleEvent, BattlePhase
 from agentic_game.domain.craft import CraftEvent, CraftPhase
 from agentic_game.domain.dialogue import DialogueEvent, DialoguePhase
@@ -15,6 +14,7 @@ from agentic_game.flow.exploration import EXPLORATION_TRANSITIONS
 from agentic_game.flow.quest import QUEST_TRANSITIONS
 from agentic_game.flow.skill_training import SKILL_TRAINING_TRANSITIONS
 from agentic_game.flow.trade import TRADE_TRANSITIONS
+from agentic_game.scenarios.spec import ScenarioNode, ScenarioSpec
 
 BATTLE_SCENARIO = ScenarioSpec[BattlePhase, BattleEvent](
     name="battle",

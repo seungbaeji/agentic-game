@@ -4,21 +4,21 @@ from collections.abc import Callable
 
 from agentic_game.agent.decisions import CraftDecision
 from agentic_game.agent.models import CraftNode
-from agentic_game.agent.nodes.scenario import make_flow_node
+from agentic_game.agent.nodes.scenario_nodes import make_flow_node
 from agentic_game.agent.prompts import (
     build_craft_decision_prompt,
     build_craft_response_prompt,
 )
 from agentic_game.agent.routing import craft_node_for_scenario_node
-from agentic_game.agent.runtime.tools import ToolInvoker, execute_craft_tool
-from agentic_game.agent.scenarios import CRAFT_SCENARIO
 from agentic_game.agent.state import CraftState
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
 from agentic_game.domain.craft import CraftEvent, CraftPhase, CraftResult
+from agentic_game.engine.tool_runner import ToolInvoker, execute_craft_tool
 from agentic_game.flow.craft import (
     serialize_craft_actions,
 )
 from agentic_game.flow.intent import infer_craft_event
+from agentic_game.scenarios.catalog import CRAFT_SCENARIO
 
 _craft_flow_node = make_flow_node(
     spec=CRAFT_SCENARIO,
