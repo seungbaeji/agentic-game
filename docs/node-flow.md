@@ -24,7 +24,7 @@ LangGraph는 이 흐름을 실행하는 조립 계층입니다. 업무 전이는
 
 LLM을 많이 활용하더라도 flow 자체를 LLM에게 맡기지 않습니다.
 
-입력 처리 우선순위는 다음과 같습니다.
+목표 실행 모델은 다음과 같습니다.
 
 1. deterministic fast-path
    명시적인 행동 입력은 키워드 기반 감지로 바로 event를 고릅니다.
@@ -37,6 +37,8 @@ LLM을 많이 활용하더라도 flow 자체를 LLM에게 맡기지 않습니다
 
 4. direct response
    `question`, `clarify`, `smalltalk`은 phase를 움직이지 않고 현재 scenario state를 바탕으로 응답합니다.
+
+현재 구현은 이 모델을 향해 가는 중입니다. battle/craft/dialogue는 LLM decision과 follow-up 응답을 일부 사용하지만, 모든 scenario에서 `question/query/action` 경계가 완전히 정리된 것은 아닙니다. 특히 “내 아이템 뭐야?”, “무슨 단서야?” 같은 조회/후속 질문이 action 후보로 오인될 수 있습니다. 이 개선은 issue #3에서 추적합니다.
 
 ## Parent Graph
 
@@ -58,7 +60,7 @@ ParentNode.ASK_USER
 5. scenario wrapper가 subgraph를 실행합니다.
 6. parent response가 subgraph response를 사용자에게 돌려줍니다.
 
-이 순서 덕분에 `대화하고 싶어` 이후 `자세히 말해줘` 같은 입력이 parent capability 안내로 빠지지 않고 dialogue scenario 안에서 처리됩니다.
+이 순서의 의도는 `대화하고 싶어` 이후 `자세히 말해줘` 같은 입력을 parent capability 안내로 보내지 않고 active scenario 안에서 처리하는 것입니다. 다만 질문/query 판정은 아직 scenario별 구현 차이가 있으므로, action-only flow gate를 더 명확히 해야 합니다.
 
 명시적 scenario switch는 active session보다 우선합니다.
 

@@ -4,15 +4,40 @@
 
 게임은 최종 목적이 아니라 샘플 도메인입니다. 이 문서는 코드 구조를 빠르게 파악하고, business flow가 공통 scenario graph를 어떻게 이끄는지, 그리고 이 패턴을 다른 업무 도메인으로 어떻게 추출할 수 있는지 이해하기 위한 가이드입니다.
 
-## 문서 구성
+## 먼저 읽을 순서
 
-- [Architecture](architecture.md): 폴더 구조, 역할/책임/경계, 의존성 방향, 확장 지점
-- [Glossary](glossary.md): scenario, phase, event, flow, ToolBinding 같은 용어 정리
-- [Flow-Centered Scenario Execution](node-flow.md): parent graph, scenario graph, LLM/flow/runtime 경계
-- [Scenario Details](scenario-details.md): 현재 게임 샘플별 동작 방식
-- [Tool Calling Architecture Comparison](tool-calling-comparison.md): MCP/tool-calling 패턴과 현재 hybrid runtime 비교
+처음 보는 사람은 아래 순서로 읽는 것이 가장 덜 헷갈립니다.
 
-## 핵심 구조
+1. [LLM, Tool, Flow 입문 가이드](llm-tool-flow-guide.md)
+   LLM에게 맡기는 일과 runtime이 통제하는 일을 먼저 구분합니다.
+
+2. [Glossary](glossary.md)
+   scenario, phase, event, flow, ToolBinding 같은 용어를 짧게 확인합니다.
+
+3. [Flow-Centered Scenario Execution](node-flow.md)
+   사용자 입력이 parent graph와 scenario graph를 거쳐 어떻게 실행되는지 봅니다.
+
+4. [Architecture](architecture.md)
+   폴더별 책임과 의존성 방향을 봅니다.
+
+5. [Scenario Details](scenario-details.md)
+   battle, craft, dialogue 같은 게임 샘플이 공통 구조를 어떻게 쓰는지 봅니다.
+
+6. [Tool Calling Architecture Comparison](tool-calling-comparison.md)
+   일반 tool-calling agent와 이 프로젝트의 guarded workflow 방식 차이를 봅니다.
+
+## 문서별 책임
+
+| 문서 | 책임 |
+| --- | --- |
+| [LLM, Tool, Flow 입문 가이드](llm-tool-flow-guide.md) | 처음 읽는 사람을 위한 배경과 mental model |
+| [Glossary](glossary.md) | 용어 사전 |
+| [Flow-Centered Scenario Execution](node-flow.md) | runtime 실행 순서 |
+| [Architecture](architecture.md) | 패키지 경계, 의존성 방향, 확장 규칙 |
+| [Scenario Details](scenario-details.md) | 현재 게임 scenario별 동작 |
+| [Tool Calling Architecture Comparison](tool-calling-comparison.md) | tool-calling 방식과 현재 hybrid 방식 비교 |
+
+## 코드 지도
 
 ```text
 src/agentic_game/
