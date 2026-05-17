@@ -1,3 +1,5 @@
+"""Parent-level intent routing between game scenarios."""
+
 from __future__ import annotations
 
 from agentic_game.flow.models import SubgraphName

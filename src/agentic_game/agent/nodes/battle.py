@@ -18,7 +18,7 @@ from agentic_game.flow.battle import (
     serialize_battle_actions,
 )
 from agentic_game.scenarios.battle import infer_battle_event
-from agentic_game.scenarios.catalog import BATTLE_SCENARIO
+from agentic_game.scenarios.definitions import BATTLE_SCENARIO
 
 _battle_flow_node = make_flow_node(
     spec=BATTLE_SCENARIO,
