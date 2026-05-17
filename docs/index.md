@@ -1,6 +1,6 @@
 # agentic-game
 
-`agentic-game`은 LangGraph 기반 전투/제작 샘플 에이전트입니다.
+`agentic-game`은 LangGraph 기반 게임 시나리오 에이전트입니다.
 
 이 문서는 코드 구조를 빠르게 파악하고, business flow가 공통 scenario graph를 어떻게 이끄는지 이해하기 위한 가이드입니다.
 
@@ -15,8 +15,10 @@
 src/agentic_game/
   domain/       # 순수 비즈니스 데이터와 규칙
   flow/         # 업무 phase/event transition
+  scenarios/    # ScenarioSpec, intent, parent routing, scenario 등록
+  engine/       # subgraph 실행과 tool runner
   application/  # usecase와 port
-  agent/        # LangGraph graph, node, runtime
+  agent/        # LangGraph graph/node 조립
   tools/        # LLM tool layer
   inbound/      # CLI, REST API, UI 같은 interface
   outbound/     # LLM, store, random adapter

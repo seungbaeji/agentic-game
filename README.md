@@ -64,7 +64,7 @@ src/agentic_game/
 - `engine/`: subgraph 실행, state persistence, tool 실행처럼 scenario를 실제로 돌리는 공통 실행기를 둡니다.
 - `agent/transitions.py`: parent graph edge table입니다. scenario subgraph의 node shape는 `agent/graph/scenario_graph.py`의 공통 graph를 사용합니다.
 - `agent/graph/`: `StateGraph`를 만들고 node와 edge table을 조립합니다. node 내부 로직은 알지 않습니다.
-- `agent/nodes/`: LangGraph가 호출하는 얇은 실행 단위입니다. state를 읽고 decision/flow/runtime에 위임한 뒤 다음 state update를 반환합니다.
+- `agent/nodes/`: LangGraph가 호출하는 얇은 실행 단위입니다. state를 읽고 decision/flow/engine에 위임한 뒤 다음 state update를 반환합니다.
 
 `scenarios/` 내부 경계는 다음과 같습니다.
 
