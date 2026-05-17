@@ -324,4 +324,10 @@ def test_agent_graph_routes_skill_training_and_keeps_context_until_level_up() ->
     saved_state = container.store.get(namespace=("skill_training", "state"), key="latest")
     assert saved_state["phase"] == "level_up"
     assert saved_state["event"] == "level_up"
+    assert saved_state["selected_skill"] == "swordsmanship"
     assert "next_node" not in saved_state
+
+    skill_book = container.store.get(namespace=("game", "skills"), key="latest")
+    assert skill_book.skills[0].skill_id == "swordsmanship"
+    assert skill_book.skills[0].level == 2
+    assert skill_book.skills[0].exp == 0

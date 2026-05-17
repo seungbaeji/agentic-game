@@ -177,9 +177,9 @@ scenario wrapper는 subgraph를 실행한 뒤 parent response로 갑니다. ask 
 | quest | deterministic execute node | 없음 |
 | trade | deterministic execute node | 없음 |
 | dialogue | deterministic response 중심 | 없음 |
-| skill_training | deterministic execute node | 없음 |
+| skill_training | deterministic execute node | skill book 저장 |
 
-따라서 현재 일반화된 핵심은 graph shape와 phase/event flow입니다. tool/usecase/payload persistence는 battle/craft에만 구현되어 있습니다. craft는 성공한 제작 결과를 `game/inventory/latest`에 반영합니다. 다른 시나리오는 이 구조를 확장하기 위한 lightweight sample입니다.
+따라서 현재 일반화된 핵심은 graph shape와 phase/event flow입니다. tool/usecase/payload persistence는 battle/craft에만 구현되어 있습니다. craft는 성공한 제작 결과를 `game/inventory/latest`에 반영하고, skill_training은 훈련/레벨업 결과를 `game/skills/latest`에 반영합니다. 다른 시나리오는 이 구조를 확장하기 위한 lightweight sample입니다.
 
 ## Battle Subgraph
 
@@ -571,7 +571,7 @@ game / inventory / latest
 
 ## Lightweight Scenario Execute Nodes
 
-exploration, quest, trade, dialogue, skill_training은 현재 tool runner를 거치지 않습니다. 각 scenario node 파일에서 deterministic response를 반환합니다.
+exploration, quest, trade, dialogue, skill_training은 현재 tool runner를 거치지 않습니다. 각 scenario node 파일에서 deterministic response를 반환합니다. 이 중 skill_training은 `GameStateRepository`를 통해 skill book도 갱신합니다.
 
 ```text
 agent/nodes/exploration.py      -> exploration_execute_node
@@ -630,6 +630,7 @@ runtime state
 
 game state
   game / inventory / latest
+  game / skills / latest
 ```
 
 Parent graph는 각 subgraph state를 store에 저장합니다.

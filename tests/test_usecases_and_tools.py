@@ -6,6 +6,8 @@ from agentic_game.application.game_state import GameStateRepository
 from agentic_game.application.usecases import (
     craft_item,
     craft_item_and_store_reward,
+    level_up_trained_skill,
+    practice_skill,
     resolve_battle_action,
 )
 from agentic_game.domain.battle import BattleOutcome
@@ -46,6 +48,29 @@ def test_craft_item_and_store_reward_adds_successful_item_to_inventory() -> None
     assert result.inventory_delta.item_id == "healing_potion"
     assert inventory.items[0].item_id == "healing_potion"
     assert inventory.items[0].quantity == 1
+
+
+def test_skill_training_usecases_update_skill_book() -> None:
+    store = LangGraphStoreAdapter(InMemoryStore())
+    game_state = GameStateRepository(store)
+
+    practice_result = practice_skill(
+        skill_id="alchemy",
+        game_state=game_state,
+    )
+    level_up_result = level_up_trained_skill(
+        skill_id="alchemy",
+        game_state=game_state,
+    )
+
+    skill_book = game_state.load_skills()
+
+    assert practice_result.skill_book.skills[0].skill_id == "alchemy"
+    assert practice_result.skill_book.skills[0].level == 1
+    assert practice_result.skill_book.skills[0].exp == 10
+    assert level_up_result.skill_book.skills[0].level == 2
+    assert skill_book.skills[0].level == 2
+    assert skill_book.skills[0].exp == 0
 
 
 def test_tool_schema_hides_injected_dependencies() -> None:

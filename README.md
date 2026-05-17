@@ -44,9 +44,9 @@ src/agentic_game/
 | quest | deterministic execute node | 없음 |
 | trade | deterministic execute node | 없음 |
 | dialogue | deterministic response 중심 | 없음 |
-| skill_training | deterministic execute node | 없음 |
+| skill_training | deterministic execute node + skill 저장 | 없음 |
 
-즉 일반화된 부분은 `phase/event -> flow -> ScenarioNode -> 공통 LangGraph shape`입니다. 아직 모든 시나리오가 tool/usecase까지 일반화된 것은 아닙니다. 현재 실제 LangChain `@tool`과 payload persistence는 battle/craft에만 있습니다. craft는 성공 시 `game/inventory/latest`에 제작 아이템도 저장합니다.
+즉 일반화된 부분은 `phase/event -> flow -> ScenarioNode -> 공통 LangGraph shape`입니다. 아직 모든 시나리오가 tool/usecase까지 일반화된 것은 아닙니다. 현재 실제 LangChain `@tool`과 payload persistence는 battle/craft에만 있습니다. craft는 성공 시 `game/inventory/latest`에 제작 아이템을 저장하고, skill_training은 `game/skills/latest`에 스킬 성장 상태를 저장합니다.
 
 ## Flow 중심 실행 요약
 

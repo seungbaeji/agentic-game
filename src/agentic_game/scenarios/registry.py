@@ -174,7 +174,7 @@ def make_skill_training_wrapper(store: StorePort):
     """Create the parent node that invokes and persists the skill training subgraph."""
     return make_simple_subgraph_wrapper(
         store=store,
-        graph=build_skill_training_subgraph(),
+        graph=build_skill_training_subgraph(store),
         subgraph=SubgraphName.SKILL_TRAINING,
         initial_phase=SkillTrainingPhase.SELECT_SKILL,
     )

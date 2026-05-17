@@ -158,6 +158,7 @@ class SkillTrainingState(TypedDict, total=False):
 
     phase: SkillTrainingPhase
     event: SkillTrainingEvent
+    selected_skill: str
 
     latest_refs: StoreRefs
     history_refs: HistoryRefs
