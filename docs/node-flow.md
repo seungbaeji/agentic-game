@@ -165,6 +165,22 @@ PARENT_DIRECT_EDGES = [
 
 scenario wrapper는 subgraph를 실행한 뒤 parent response로 갑니다. ask user는 바로 종료됩니다.
 
+## Scenario 실행 방식
+
+모든 게임 시나리오는 같은 `ScenarioNode` graph shape를 사용합니다. 다만 `EXECUTE` 단계에서 실제 tool을 쓰는지 여부는 아직 다릅니다.
+
+| Scenario | Execute/Response 방식 | Store payload |
+| --- | --- | --- |
+| battle | `engine/tool_runner.py` -> `resolve_battle_tool` -> `resolve_battle_action` | raw/llm/ui 저장 |
+| craft | `engine/tool_runner.py` -> `craft_item_tool` -> `craft_item` | raw/llm/ui 저장 |
+| exploration | deterministic execute node | 없음 |
+| quest | deterministic execute node | 없음 |
+| trade | deterministic execute node | 없음 |
+| dialogue | deterministic response 중심 | 없음 |
+| skill_training | deterministic execute node | 없음 |
+
+따라서 현재 일반화된 핵심은 graph shape와 phase/event flow입니다. tool/usecase/payload persistence는 battle/craft에만 구현되어 있고, 다른 시나리오는 이 구조를 확장하기 위한 lightweight sample입니다.
+
 ## Battle Subgraph
 
 Battle subgraph는 전투 업무 흐름을 실행합니다.
@@ -224,12 +240,12 @@ ScenarioNode.ASK_USER
 
 ### Battle Graph Shape
 
-`agent/graph/battle.py`:
+`agent/graph/battle.py`는 `agent/graph/scenario_graph.py`의 공통 builder를 사용합니다.
 
 ```text
-DECISION -> FLOW
+DECISION -> FLOW | ASK_USER
 FLOW -> HITL | EXECUTE | RESPONSE | ASK_USER
-HITL -> DECISION | RESPONSE
+HITL -> DECISION | ASK_USER
 EXECUTE -> RESPONSE
 RESPONSE -> END
 ASK_USER -> END
@@ -441,13 +457,13 @@ ScenarioNode.ASK_USER
 ```text
 DECISION -> FLOW | ASK_USER
 FLOW -> HITL | EXECUTE | RESPONSE | ASK_USER
-HITL -> DECISION | RESPONSE | ASK_USER
+HITL -> DECISION | ASK_USER
 EXECUTE -> RESPONSE
 RESPONSE -> END
 ASK_USER -> END
 ```
 
-Battle과 다른 점은 `DECISION`에서 바로 `ASK_USER`로 갈 수 있다는 점입니다. “제작하고 싶어”처럼 recipe가 없는 입력은 제작할 아이템을 물어야 합니다.
+Battle과 Craft 모두 같은 공통 graph shape를 사용합니다. Craft는 node 구현에서 `DECISION`이 바로 `ASK_USER`로 가는 경우를 적극적으로 사용합니다. “제작하고 싶어”처럼 recipe가 없는 입력은 제작할 아이템을 물어야 하기 때문입니다.
 
 ### Craft Decision Node
 
@@ -543,6 +559,30 @@ craft / result / ui / latest
 craft / result / raw / history / 1
 ...
 ```
+
+## Lightweight Scenario Execute Nodes
+
+exploration, quest, trade, dialogue, skill_training은 현재 tool runner를 거치지 않습니다. 각 scenario node 파일에서 deterministic response를 반환합니다.
+
+```text
+agent/nodes/exploration.py      -> exploration_execute_node
+agent/nodes/quest.py            -> quest_execute_node
+agent/nodes/trade.py            -> trade_execute_node
+agent/nodes/dialogue.py         -> dialogue_execute_node / dialogue_response_node
+agent/nodes/skill_training.py   -> skill_training_execute_node
+```
+
+이 구현은 scenario 일반화의 뼈대를 검증하기 위한 것입니다.
+
+```text
+domain phase/event
+  -> flow transition
+  -> ScenarioSpec.phase_to_node
+  -> common ScenarioNode graph
+  -> deterministic response
+```
+
+이 시나리오들을 battle/craft처럼 실제 시스템 기능으로 키우려면 application usecase, `tools/<scenario>.py`, `engine/tool_runner.py` binding, bootstrap dependency injection을 추가하면 됩니다.
 
 ### Craft Follow-up Handling
 

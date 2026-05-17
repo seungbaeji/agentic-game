@@ -32,6 +32,22 @@ src/agentic_game/
   errors/       # application-level custom exception
 ```
 
+## 현재 Scenario와 Tool 지원 상태
+
+현재 7개 게임 시나리오가 같은 `ScenarioNode` graph shape를 사용합니다.
+
+| Scenario | 실행 방식 | 실제 LangChain tool |
+| --- | --- | --- |
+| battle | usecase-backed tool 실행 | `resolve_battle_tool(action)` |
+| craft | usecase-backed tool 실행 | `craft_item_tool(recipe)` |
+| exploration | deterministic execute node | 없음 |
+| quest | deterministic execute node | 없음 |
+| trade | deterministic execute node | 없음 |
+| dialogue | deterministic response 중심 | 없음 |
+| skill_training | deterministic execute node | 없음 |
+
+즉 일반화된 부분은 `phase/event -> flow -> ScenarioNode -> 공통 LangGraph shape`입니다. 아직 모든 시나리오가 tool/usecase까지 일반화된 것은 아닙니다. 현재 실제 LangChain `@tool`과 payload persistence는 battle/craft에만 있습니다.
+
 ## Flow 중심 실행 요약
 
 이 프로젝트는 “업무 흐름”을 중심에 두고, LangGraph는 그 흐름을 실행하는 공통 껍데기로 둡니다.
@@ -99,7 +115,7 @@ scenarios/
    RESOLVE phase는 실제 전투 결과를 계산해야 하므로 ScenarioNode.EXECUTE로 보냅니다.
 
 5. execute tool
-   battle usecase를 실행하고 raw/llm/ui 결과를 store에 저장합니다.
+   battle은 tool runner를 통해 usecase를 실행하고 raw/llm/ui 결과를 store에 저장합니다.
 
 6. response
    저장된 실행 결과를 사용자에게 보여줄 응답으로 반환합니다.

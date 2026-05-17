@@ -26,6 +26,22 @@ src/agentic_game/
   errors/       # application-level custom exception
 ```
 
+## 현재 범위
+
+7개 게임 시나리오가 공통 scenario graph shape를 사용합니다.
+
+| Scenario | 실행 방식 |
+| --- | --- |
+| battle | LangChain tool + usecase |
+| craft | LangChain tool + usecase |
+| exploration | deterministic execute node |
+| quest | deterministic execute node |
+| trade | deterministic execute node |
+| dialogue | deterministic response 중심 |
+| skill_training | deterministic execute node |
+
+현재 실제 `@tool` 계층과 raw/llm/ui payload 저장은 battle/craft에만 있습니다. 나머지 시나리오는 flow 일반화와 graph shape 검증을 위한 lightweight 구현입니다.
+
 ## 실행
 
 ```bash
