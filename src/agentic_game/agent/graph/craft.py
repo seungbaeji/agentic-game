@@ -34,6 +34,7 @@ def build_craft_subgraph(
         return craft_execute_tool_node(
             state,
             store=store,
+            llm=llm,
             craft_item_tool=craft_item_tool,
             craft_item=craft_item,
             random=random,

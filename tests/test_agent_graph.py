@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from agentic_game.application.content_generation import CraftNarration
 from agentic_game.bootstrap import build_agent_graph, build_container
 from agentic_game.config.settings import Settings
 from agentic_game.outbound.llm.testing import TestingLLMAdapter
@@ -141,6 +142,47 @@ def test_agent_graph_continues_craft_after_recipe_selection() -> None:
     inventory = container.store.get(namespace=("game", "inventory"), key="latest")
     assert inventory.items[0].item_id == "healing_potion"
     assert inventory.items[0].quantity == 1
+
+
+def test_agent_graph_uses_llm_craft_narration_without_changing_state() -> None:
+    llm = TestingLLMAdapter(
+        structured_outputs={
+            CraftNarration: [
+                {"response": "연금대 위에서 healing_potion이 맑게 빛나며 완성됐습니다."}
+            ],
+        }
+    )
+    container = build_container(
+        settings=Settings(_env_file=None),
+        llm=llm,
+        random=FixedRandom(d20=[19]),
+    )
+    graph = build_agent_graph(container)
+
+    first = graph.invoke(
+        {
+            "user_input": "제작하고 싶어",
+            "store_refs": {},
+        }
+    )
+    second = graph.invoke(
+        {
+            "user_input": "포션",
+            "store_refs": first["store_refs"],
+        }
+    )
+
+    assert second["response"] == "연금대 위에서 healing_potion이 맑게 빛나며 완성됐습니다."
+
+    inventory = container.store.get(namespace=("game", "inventory"), key="latest")
+    craft_raw = container.store.get(namespace=("craft", "result", "raw"), key="latest")
+    assert inventory.items[0].item_id == "healing_potion"
+    assert inventory.items[0].quantity == 1
+    assert craft_raw["item_name"] == "healing_potion"
+    assert craft_raw["inventory_delta"] == {
+        "item_id": "healing_potion",
+        "quantity": 1,
+    }
 
 
 def test_agent_graph_routes_exploration_and_keeps_context() -> None:

@@ -9,6 +9,7 @@ from agentic_game.agent.prompts import (
     build_craft_response_prompt,
 )
 from agentic_game.agent.state import CraftState
+from agentic_game.application.content_generation import generate_craft_narration
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
 from agentic_game.application.usecases.craft import CraftItemResult
 from agentic_game.domain.craft import CraftEvent, CraftPhase
@@ -106,6 +107,7 @@ def craft_execute_tool_node(
     state: CraftState,
     *,
     store: StorePort,
+    llm: LLMPort,
     craft_item_tool: ToolInvoker,
     craft_item: Callable[..., CraftItemResult],
     random: RandomPort,
@@ -117,6 +119,12 @@ def craft_execute_tool_node(
         craft_item_tool=craft_item_tool,
         craft_item=craft_item,
         random=random,
+        summarize_tool_result=lambda tool_result: generate_craft_narration(
+            llm=llm,
+            raw=tool_result.raw,
+            llm_payload=tool_result.llm,
+        )
+        or tool_result.llm["summary"],
     )
 
 

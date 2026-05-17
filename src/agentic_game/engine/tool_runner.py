@@ -109,6 +109,7 @@ def execute_craft_tool(
     craft_item_tool: ToolInvoker,
     craft_item: Callable[..., object],
     random: RandomPort,
+    summarize_tool_result: Callable[[ToolResult], str] | None = None,
 ) -> CraftState:
     """Invoke the craft tool and return the craft graph state update."""
     event = state["event"]
@@ -136,6 +137,10 @@ def execute_craft_tool(
     return {
         "latest_refs": ref_update["latest_refs"],
         "history_refs": ref_update["history_refs"],
-        "response": tool_result.llm["summary"],
+        "response": (
+            summarize_tool_result(tool_result)
+            if summarize_tool_result is not None
+            else tool_result.llm["summary"]
+        ),
         "next_node": ScenarioNode.RESPONSE,
     }

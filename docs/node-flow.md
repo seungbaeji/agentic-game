@@ -578,6 +578,18 @@ game / inventory / latest
 
 현재 craft 성공 시 `healing_potion`, `old_sword` 같은 제작 결과가 inventory에 누적됩니다. 이 inventory는 tool payload가 아니라 플레이어 게임 상태입니다.
 
+craft 응답은 선택적으로 LLM narration을 사용합니다.
+
+```text
+craft tool result
+  -> deterministic summary
+  -> CraftNarration structured output 시도
+  -> 성공하면 narration을 response로 사용
+  -> 실패하면 deterministic summary 사용
+```
+
+LLM narration은 응답 문장만 바꿉니다. `inventory_delta`, `item_name`, `success` 같은 상태 변경 값은 tool/usecase 결과를 그대로 사용합니다.
+
 ## Lightweight Scenario Execute Nodes
 
 exploration, quest, trade, dialogue, skill_training은 현재 tool runner를 거치지 않습니다. 각 scenario node 파일에서 deterministic response를 반환합니다. 이 중 exploration은 world state를 갱신하고, trade는 `GameStateRepository`를 통해 player gold와 inventory를 갱신하고, quest는 quest log/player reward를 갱신하고, dialogue는 NPC memory를 갱신하고, skill_training은 skill book도 갱신합니다.
