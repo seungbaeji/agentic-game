@@ -1,13 +1,12 @@
-# Node Flow And Transitions
+# Flow-Centered Scenario Execution
 
-이 문서는 LangGraph node 전이와 business flow가 어떻게 함께 적용되는지 설명합니다.
+이 문서는 business flow가 scenario 실행을 어떻게 이끄는지 설명합니다.
 
-프로젝트에는 두 종류의 전이가 있습니다.
+프로젝트의 중심 전이는 하나입니다.
 
 - business flow transition: 업무 phase/event가 어떻게 바뀌는지 정의한다.
-- LangGraph node transition: graph runtime이 다음에 어떤 node를 실행할지 정의한다.
 
-이 둘은 비슷해 보이지만 같은 책임이 아닙니다. `BattlePhase.ACTION`으로 이동한다는 것은 업무 상태가 행동 선택 단계가 됐다는 뜻입니다. 하지만 LangGraph 입장에서는 그 다음에 `BattleNode.HITL`을 실행해야 합니다. 이 연결이 `routing.py`의 역할입니다.
+LangGraph subgraph는 scenario마다 새로 설계하지 않고 공통 `ScenarioNode` shape를 사용합니다. `BattlePhase.ACTION`으로 이동한다는 것은 업무 상태가 행동 선택 단계가 됐다는 뜻이고, `ScenarioSpec.phase_to_node`가 이 phase를 `ScenarioNode.HITL` 같은 공통 실행 단계로 바꿉니다.
 
 ## 전체 실행 흐름
 
@@ -21,7 +20,7 @@ inbound/cli/main.py
 
 parent graph
   -> parent decision
-  -> battle subgraph or craft subgraph
+  -> scenario subgraph
   -> parent response
 ```
 
@@ -34,7 +33,7 @@ parent graph
 }
 ```
 
-parent graph는 입력 intent를 보고 battle 또는 craft subgraph로 위임합니다. subgraph가 끝나면 parent graph는 subgraph response를 최종 response로 돌려줍니다.
+parent graph는 입력 intent를 보고 battle, craft, exploration 같은 scenario subgraph로 위임합니다. subgraph가 끝나면 parent graph는 subgraph response를 최종 response로 돌려줍니다.
 
 ## Parent Graph
 
@@ -201,12 +200,12 @@ RESOLVE --COMPLETE--> COMPLETE
 ### Battle Nodes
 
 ```text
-BattleNode.DECISION
-BattleNode.FLOW
-BattleNode.HITL
-BattleNode.EXECUTE
-BattleNode.RESPONSE
-BattleNode.ASK_USER
+ScenarioNode.DECISION
+ScenarioNode.FLOW
+ScenarioNode.HITL
+ScenarioNode.EXECUTE
+ScenarioNode.RESPONSE
+ScenarioNode.ASK_USER
 ```
 
 ### Battle Graph Shape
@@ -240,7 +239,7 @@ user_input
 2. 사용자 입력에서 명시적 event를 추론한다.
 3. 추론되면 LLM을 호출하지 않고 event를 확정한다.
 4. 추론되지 않으면 LLM structured output으로 `BattleDecision`을 받는다.
-5. `next_node = BattleNode.FLOW`를 반환한다.
+5. `next_node = ScenarioNode.FLOW`를 반환한다.
 
 반환 예시:
 
@@ -250,7 +249,7 @@ user_input
     "event": BattleEvent.ATTACK,
     "available_actions": [...],
     "reason": "...",
-    "next_node": BattleNode.FLOW,
+    "next_node": ScenarioNode.FLOW,
 }
 ```
 
@@ -262,9 +261,9 @@ user_input
 
 1. `state["phase"]`와 `state["event"]`를 읽는다.
 2. `resolve_battle_transition(phase, event)`로 flow rule을 찾는다.
-3. rule이 없으면 `BattleNode.ASK_USER`로 보낸다.
+3. rule이 없으면 `ScenarioNode.ASK_USER`로 보낸다.
 4. rule이 있으면 `next_phase = rule.to_phase`를 얻는다.
-5. `routing.battle_node_after_phase(next_phase)`로 LangGraph next node를 결정한다.
+5. `ScenarioSpec.phase_to_node[next_phase]`로 LangGraph next node를 결정한다.
 
 중요한 점은 flow node가 두 단계를 연결한다는 것입니다.
 
@@ -277,7 +276,7 @@ business event -> business phase -> LangGraph node
 ```text
 PREPARE + ATTACK
   -> flow transition: RESOLVE
-  -> routing: BattleNode.EXECUTE
+  -> phase_to_node: ScenarioNode.EXECUTE
 ```
 
 반환 state update:
@@ -286,24 +285,26 @@ PREPARE + ATTACK
 {
     "phase": BattlePhase.RESOLVE,
     "available_actions": serialize_battle_actions(BattlePhase.RESOLVE),
-    "next_node": BattleNode.EXECUTE,
+    "next_node": ScenarioNode.EXECUTE,
 }
 ```
 
-### Battle Routing
+### Battle Phase-To-Node Mapping
 
-`agent/routing.py`:
+`ScenarioSpec.phase_to_node`:
 
 ```python
-def battle_node_after_phase(phase: BattlePhase) -> BattleNode:
-    if phase == BattlePhase.ACTION:
-        return BattleNode.HITL
-    if phase == BattlePhase.RESOLVE:
-        return BattleNode.EXECUTE
-    return BattleNode.RESPONSE
+BATTLE_SCENARIO = ScenarioSpec(
+    ...,
+    phase_to_node={
+        BattlePhase.ACTION: ScenarioNode.HITL,
+        BattlePhase.RESOLVE: ScenarioNode.EXECUTE,
+        BattlePhase.COMPLETE: ScenarioNode.RESPONSE,
+    },
+)
 ```
 
-이 규칙은 flow transition table과 분리되어 있습니다. flow는 업무 phase만 알고, routing은 graph runtime node만 압니다.
+이 규칙은 flow transition table과 분리되어 있습니다. flow는 업무 phase만 알고, scenario definition이 phase를 공통 graph 실행 단계로 바꿉니다.
 
 ### Battle HITL Node
 
@@ -314,7 +315,7 @@ human input이 없으면 response를 만들고 종료 방향으로 보냅니다.
 ```python
 {
     "response": "HITL 필요: ...",
-    "next_node": BattleNode.RESPONSE,
+    "next_node": ScenarioNode.RESPONSE,
 }
 ```
 
@@ -322,7 +323,7 @@ human input이 있으면 다시 decision으로 보냅니다.
 
 ```python
 {
-    "next_node": BattleNode.DECISION,
+    "next_node": ScenarioNode.DECISION,
 }
 ```
 
@@ -363,7 +364,7 @@ graph state에는 store ref만 남깁니다.
         ...
     },
     "response": "...",
-    "next_node": BattleNode.RESPONSE,
+    "next_node": ScenarioNode.RESPONSE,
 }
 ```
 
@@ -413,12 +414,12 @@ RESULT --COMPLETE--> COMPLETE
 ### Craft Nodes
 
 ```text
-CraftNode.DECISION
-CraftNode.FLOW
-CraftNode.HITL
-CraftNode.EXECUTE
-CraftNode.RESPONSE
-CraftNode.ASK_USER
+ScenarioNode.DECISION
+ScenarioNode.FLOW
+ScenarioNode.HITL
+ScenarioNode.EXECUTE
+ScenarioNode.RESPONSE
+ScenarioNode.ASK_USER
 ```
 
 ### Craft Graph Shape
@@ -440,7 +441,7 @@ Battle과 다른 점은 `DECISION`에서 바로 `ASK_USER`로 갈 수 있다는 
 
 1. 현재 phase의 available actions를 만든다.
 2. 명시적 recipe intent를 추론한다.
-3. recipe가 있으면 `CraftNode.FLOW`로 보낸다.
+3. recipe가 있으면 `ScenarioNode.FLOW`로 보낸다.
 4. `SELECT_RECIPE` phase에서 recipe가 없으면 `CONTINUE` event로 `FLOW`에 보낸다.
 5. `CRAFT` phase에서 recipe가 없으면 `ASK_USER`로 보낸다.
 6. 그 외에는 LLM structured output으로 `CraftDecision`을 받는다.
@@ -456,17 +457,19 @@ potion 제작 성공
 
 ### Craft Flow Node
 
-`craft_flow_node`는 `resolve_craft_transition(phase, event)`로 business flow rule을 찾고, `craft_node_after_phase(next_phase)`로 LangGraph next node를 고릅니다.
+`craft_flow_node`는 `resolve_craft_transition(phase, event)`로 business flow rule을 찾고, `ScenarioSpec.phase_to_node[next_phase]`로 LangGraph next node를 고릅니다.
 
-`agent/routing.py`:
+`ScenarioSpec.phase_to_node`:
 
 ```python
-def craft_node_after_phase(phase: CraftPhase) -> CraftNode:
-    if phase == CraftPhase.CRAFT:
-        return CraftNode.HITL
-    if phase == CraftPhase.RESULT:
-        return CraftNode.EXECUTE
-    return CraftNode.RESPONSE
+CRAFT_SCENARIO = ScenarioSpec(
+    ...,
+    phase_to_node={
+        CraftPhase.CRAFT: ScenarioNode.HITL,
+        CraftPhase.RESULT: ScenarioNode.EXECUTE,
+        CraftPhase.COMPLETE: ScenarioNode.RESPONSE,
+    },
+)
 ```
 
 예:
@@ -474,13 +477,13 @@ def craft_node_after_phase(phase: CraftPhase) -> CraftNode:
 ```text
 SELECT_RECIPE + CONTINUE
   -> flow transition: CRAFT
-  -> routing: CraftNode.HITL
+  -> phase_to_node: ScenarioNode.HITL
 ```
 
 ```text
 CRAFT + CRAFT_POTION
   -> flow transition: RESULT
-  -> routing: CraftNode.EXECUTE
+  -> phase_to_node: ScenarioNode.EXECUTE
 ```
 
 ### Craft HITL Node
@@ -492,7 +495,7 @@ recipe가 없으면:
 ```python
 {
     "response": "HITL 필요: 제작할 아이템을 선택하세요. ...",
-    "next_node": CraftNode.ASK_USER,
+    "next_node": ScenarioNode.ASK_USER,
 }
 ```
 
@@ -500,7 +503,7 @@ recipe가 있으면:
 
 ```python
 {
-    "next_node": CraftNode.DECISION,
+    "next_node": ScenarioNode.DECISION,
 }
 ```
 
@@ -589,19 +592,7 @@ def remove_runtime_routing(state):
 
 테스트에서도 persisted state에 `next_node`가 없는지 확인합니다.
 
-## 왜 transitions.py와 routing.py가 분리되어 있는가
-
-`transitions.py`는 LangGraph edge table입니다.
-
-```text
-어떤 node에서 어떤 node로 갈 수 있는가?
-```
-
-`routing.py`는 phase-to-node mapping입니다.
-
-```text
-업무 phase가 결정된 뒤 LangGraph runtime은 어떤 node를 실행해야 하는가?
-```
+## 왜 flow와 ScenarioNode를 나누는가
 
 `flow/*.py`는 business transition입니다.
 
@@ -609,7 +600,19 @@ def remove_runtime_routing(state):
 현재 phase와 event가 주어졌을 때 다음 업무 phase는 무엇인가?
 ```
 
-세 계층을 합치면 다음 순서가 됩니다.
+`ScenarioSpec.phase_to_node`는 phase-to-node mapping입니다.
+
+```text
+업무 phase가 결정된 뒤 LangGraph runtime은 어떤 node를 실행해야 하는가?
+```
+
+`agent/graph/scenario_graph.py`는 공통 LangGraph node shape입니다.
+
+```text
+ScenarioNode 사이에 어떤 실행 경로가 있는가?
+```
+
+이 셋을 합치면 다음 순서가 됩니다.
 
 ```text
 user input
@@ -617,13 +620,13 @@ user input
   -> event
   -> flow transition
   -> next business phase
-  -> routing
-  -> next graph node
-  -> transitions edge table
+  -> ScenarioSpec.phase_to_node
+  -> ScenarioNode
+  -> generic scenario graph
   -> actual LangGraph transition
 ```
 
-이 분리 덕분에 업무 흐름을 바꾸는 작업과 LangGraph node 구조를 바꾸는 작업이 서로 덜 얽힙니다.
+이 분리 덕분에 업무 흐름을 바꾸는 작업은 flow와 scenario definition에 머물고, LangGraph node 구조는 공통 graph shape 안에 머뭅니다.
 
 ## Error Handling
 

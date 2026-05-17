@@ -3,12 +3,12 @@ from __future__ import annotations
 from collections.abc import Callable
 from typing import Protocol
 
-from agentic_game.agent.models import BattleNode, CraftNode
 from agentic_game.agent.state import BattleState, CraftState
 from agentic_game.agent.types import PhasePayloadRefs, RuntimeState, ToolInput
 from agentic_game.application.ports import RandomPort, StorePort
 from agentic_game.domain.battle import BattleEvent, BattlePhase, BattleResult
 from agentic_game.domain.craft import CraftEvent, CraftPhase, CraftResult
+from agentic_game.scenarios.spec import ScenarioNode
 from agentic_game.tools.types import ToolResult
 
 
@@ -76,7 +76,7 @@ def execute_battle_tool(
     if action is None:
         return {
             "reason": f"tool로 실행할 수 없는 battle event입니다: {event}",
-            "next_node": BattleNode.ASK_USER,
+            "next_node": ScenarioNode.ASK_USER,
         }
 
     tool_result = resolve_battle_tool.invoke({
@@ -96,7 +96,7 @@ def execute_battle_tool(
         "latest_refs": ref_update["latest_refs"],
         "history_refs": ref_update["history_refs"],
         "response": tool_result.llm["summary"],
-        "next_node": BattleNode.RESPONSE,
+        "next_node": ScenarioNode.RESPONSE,
     }
 
 
@@ -114,7 +114,7 @@ def execute_craft_tool(
     if recipe is None:
         return {
             "reason": f"tool로 실행할 수 없는 craft event입니다: {event}",
-            "next_node": CraftNode.ASK_USER,
+            "next_node": ScenarioNode.ASK_USER,
         }
 
     tool_result = craft_item_tool.invoke({
@@ -134,5 +134,5 @@ def execute_craft_tool(
         "latest_refs": ref_update["latest_refs"],
         "history_refs": ref_update["history_refs"],
         "response": tool_result.llm["summary"],
-        "next_node": CraftNode.RESPONSE,
+        "next_node": ScenarioNode.RESPONSE,
     }

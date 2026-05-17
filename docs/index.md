@@ -2,12 +2,12 @@
 
 `agentic-game`은 LangGraph 기반 전투/제작 샘플 에이전트입니다.
 
-이 문서는 코드 구조를 빠르게 파악하고, graph node 전이와 business flow가 어떻게 연결되는지 이해하기 위한 가이드입니다.
+이 문서는 코드 구조를 빠르게 파악하고, business flow가 공통 scenario graph를 어떻게 이끄는지 이해하기 위한 가이드입니다.
 
 ## 문서 구성
 
 - [Architecture](architecture.md): 폴더 구조, 역할/책임/경계, 의존성 방향, 확장 지점
-- [Node Flow And Transitions](node-flow.md): parent/battle/craft graph의 node 전이와 flow 적용 방식
+- [Flow-Centered Scenario Execution](node-flow.md): parent graph, scenario flow, 공통 graph 실행 방식
 
 ## 핵심 구조
 
