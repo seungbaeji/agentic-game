@@ -17,7 +17,7 @@ from agentic_game.engine.tool_runner import ToolInvoker, execute_battle_tool
 from agentic_game.flow.battle import (
     serialize_battle_actions,
 )
-from agentic_game.flow.intent import infer_battle_event
+from agentic_game.scenarios.battle import infer_battle_event
 from agentic_game.scenarios.catalog import BATTLE_SCENARIO
 
 _battle_flow_node = make_flow_node(

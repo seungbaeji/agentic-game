@@ -8,9 +8,9 @@ from agentic_game.agent.nodes.scenario_nodes import (
 )
 from agentic_game.agent.state import SkillTrainingState
 from agentic_game.domain.skill_training import SkillTrainingPhase
-from agentic_game.flow.intent import infer_skill_training_event
 from agentic_game.flow.skill_training import serialize_skill_training_actions
 from agentic_game.scenarios.catalog import SKILL_TRAINING_SCENARIO
+from agentic_game.scenarios.skill_training import infer_skill_training_event
 from agentic_game.scenarios.spec import ScenarioNode
 
 skill_training_decision_node = make_decision_node(

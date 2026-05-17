@@ -9,8 +9,8 @@ from agentic_game.agent.nodes.scenario_nodes import (
 from agentic_game.agent.state import ExplorationState
 from agentic_game.domain.exploration import ExplorationEvent, ExplorationPhase
 from agentic_game.flow.exploration import serialize_exploration_actions
-from agentic_game.flow.intent import infer_exploration_event
 from agentic_game.scenarios.catalog import EXPLORATION_SCENARIO
+from agentic_game.scenarios.exploration import infer_exploration_event
 from agentic_game.scenarios.spec import ScenarioNode
 
 exploration_decision_node = make_decision_node(

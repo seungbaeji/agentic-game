@@ -8,9 +8,9 @@ from agentic_game.agent.nodes.scenario_nodes import (
 )
 from agentic_game.agent.state import QuestState
 from agentic_game.domain.quest import QuestEvent, QuestPhase
-from agentic_game.flow.intent import infer_quest_event
 from agentic_game.flow.quest import serialize_quest_actions
 from agentic_game.scenarios.catalog import QUEST_SCENARIO
+from agentic_game.scenarios.quest import infer_quest_event
 from agentic_game.scenarios.spec import ScenarioNode
 
 quest_decision_node = make_decision_node(

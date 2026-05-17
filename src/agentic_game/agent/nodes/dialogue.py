@@ -9,8 +9,8 @@ from agentic_game.agent.nodes.scenario_nodes import (
 from agentic_game.agent.state import DialogueState
 from agentic_game.domain.dialogue import DialogueEvent, DialoguePhase
 from agentic_game.flow.dialogue import serialize_dialogue_actions
-from agentic_game.flow.intent import infer_dialogue_event
 from agentic_game.scenarios.catalog import DIALOGUE_SCENARIO
+from agentic_game.scenarios.dialogue import infer_dialogue_event
 from agentic_game.scenarios.spec import ScenarioNode
 
 dialogue_decision_node = make_decision_node(
