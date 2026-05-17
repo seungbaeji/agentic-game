@@ -1,669 +1,200 @@
 # Flow-Centered Scenario Execution
 
-이 문서는 business flow가 scenario 실행을 어떻게 이끄는지 설명합니다.
+이 문서는 공통 실행 흐름만 설명합니다.
 
-프로젝트의 중심 전이는 하나입니다.
+용어가 낯설다면 [Glossary](glossary.md)를 먼저 봐도 됩니다. 구체 scenario별 동작은 [Scenario Details](scenario-details.md)를 참고하세요. 폴더 구조와 계층 책임은 [Architecture](architecture.md)를 참고하세요.
 
-- business flow transition: 업무 phase/event가 어떻게 바뀌는지 정의한다.
+## 핵심 원칙
 
-LangGraph subgraph는 scenario마다 새로 설계하지 않고 공통 `ScenarioNode` shape를 사용합니다. `BattlePhase.ACTION`으로 이동한다는 것은 업무 상태가 행동 선택 단계가 됐다는 뜻이고, `ScenarioSpec.phase_to_node`가 이 phase를 `ScenarioNode.HITL` 같은 공통 실행 단계로 바꿉니다.
-
-## 전체 실행 흐름
-
-CLI 기준 전체 흐름은 다음과 같습니다.
+이 프로젝트는 LangGraph node/edge 자체보다 `phase/event` 업무 흐름을 중심에 둡니다.
 
 ```text
-inbound/cli/main.py
-  -> get_container()
-  -> build_agent_graph(container)
-  -> graph.invoke(parent_state)
-
-parent graph
-  -> parent decision
-  -> scenario subgraph
-  -> parent response
+사용자 입력
+  -> intent fast-path / LLM decision
+  -> event 선택
+  -> flow transition
+  -> ScenarioNode 선택
+  -> execute / response / ask user
+  -> state persistence
 ```
 
-사용자 입력 하나는 항상 parent graph로 들어갑니다.
+LangGraph는 이 흐름을 실행하는 조립 계층입니다. 업무 전이는 `flow/`가 결정하고, 실행은 `engine/`과 `agent/nodes/`가 담당합니다.
 
-```python
-{
-    "user_input": "...",
-    "store_refs": {...},
-}
-```
+## LLM Decision Boundary
 
-parent graph는 입력 intent를 보고 battle, craft, exploration 같은 scenario subgraph로 위임합니다. subgraph가 끝나면 parent graph는 subgraph response를 최종 response로 돌려줍니다.
+LLM을 많이 활용하더라도 flow 자체를 LLM에게 맡기지 않습니다.
+
+입력 처리 우선순위는 다음과 같습니다.
+
+1. deterministic fast-path
+   명시적인 행동 입력은 키워드 기반 감지로 바로 event를 고릅니다.
+
+2. LLM scenario decision
+   명시적인 행동이 아니면 LLM이 입력을 `action`, `question`, `clarify`, `smalltalk` 같은 의도로 분류합니다.
+
+3. flow transition
+   `action`만 `flow/`의 phase/event transition table을 통과합니다.
+
+4. direct response
+   `question`, `clarify`, `smalltalk`은 phase를 움직이지 않고 현재 scenario state를 바탕으로 응답합니다.
 
 ## Parent Graph
 
 Parent graph는 최상위 router입니다.
 
-### Nodes
-
 ```text
 ParentNode.DECISION
-ParentNode.BATTLE
-ParentNode.CRAFT
-ParentNode.EXPLORATION
-ParentNode.TRADE
-ParentNode.QUEST
-ParentNode.DIALOGUE
-ParentNode.SKILL_TRAINING
+ParentNode.<SCENARIO>
 ParentNode.RESPONSE
 ParentNode.ASK_USER
 ```
 
-### Graph Builder
+처리 순서:
 
-`agent/graph/parent.py`는 다음 일을 합니다.
+1. `detect_parent_subgraph(user_input)`로 명시적인 scenario 의도를 먼저 찾습니다.
+2. capability question이나 help 요청이면 가능한 scenario를 안내하되 active session은 유지합니다.
+3. 현재 진행 중인 `current_subgraph`가 있으면 같은 scenario session을 이어갑니다.
+4. 그래도 모호하면 LLM `ParentDecision`으로 target scenario를 고릅니다.
+5. scenario wrapper가 subgraph를 실행합니다.
+6. parent response가 subgraph response를 사용자에게 돌려줍니다.
 
-```text
-StateGraph(ParentState)
-  add_node(parent_decision)
-  add_node(scenario subgraph wrappers)
-  add_node(parent_response)
-  add_node(parent_ask_user)
-  set_entry_point(parent_decision)
-  add_conditional_edges(parent_decision, parent_route, PARENT_DECISION_EDGES)
-  add direct edges from PARENT_DIRECT_EDGES
-```
+이 순서 덕분에 `대화하고 싶어` 이후 `자세히 말해줘` 같은 입력이 parent capability 안내로 빠지지 않고 dialogue scenario 안에서 처리됩니다.
 
-graph builder는 node 내부 로직을 모릅니다. node와 edge table을 연결할 뿐입니다.
-
-### Decision Node
-
-`agent/nodes/parent.py`의 `make_parent_decision_node`는 target subgraph를 고릅니다.
-
-우선순위는 다음과 같습니다.
-
-1. deterministic intent inference
-2. capability question detection
-3. LLM structured output
-
-#### 1. deterministic intent inference
-
-`scenarios/router.py`의 `infer_parent_subgraph(user_input)`를 호출합니다.
-
-예를 들어 다음 입력은 battle로 바로 갑니다.
+명시적 scenario switch는 active session보다 우선합니다.
 
 ```text
-몬스터를 공격할게
+대화 중 "그만하고 탐험할래"
+  -> dialogue를 계속하지 않고 exploration으로 이동
 ```
 
-반환 state update:
-
-```python
-{
-    "target_subgraph": SubgraphName.BATTLE,
-    "reason": "...",
-    "next_node": ParentNode.BATTLE,
-}
-```
-
-#### 2. capability question detection
-
-사용자가 “뭘 할 수 있어?”처럼 기능을 물으면 subgraph를 호출하지 않습니다.
-
-반환 state update:
-
-```python
-{
-    "reason": "...",
-    "next_node": ParentNode.ASK_USER,
-}
-```
-
-#### 3. LLM structured output
-
-명시적 intent가 없으면 LLM에게 `ParentDecision`을 요청합니다.
+help/pause 입력은 active session을 끝내지 않습니다.
 
 ```text
-ParentDecision
-  target_subgraph: SubgraphName | None
-  reason: str
+대화 중 "메뉴 보여줘"
+  -> capability 안내
+  -> current_subgraph=dialogue 유지
 ```
 
-LLM prompt는 `agent/prompts.py`에서 생성합니다.
+시작 안내와 capability 응답은 LLM이 생성할 수 있고, LLM 응답이 비어 있거나 실패하면 deterministic fallback을 사용합니다.
 
-### Parent Conditional Edge
+## Scenario Graph Shape
 
-`ParentNode.DECISION` 다음 전이는 `parent_route(state)`가 `state["next_node"]`를 읽어 결정합니다.
-
-`agent/transitions.py`:
-
-```python
-PARENT_DECISION_EDGES = {
-    ParentNode.BATTLE: ParentNode.BATTLE,
-    ParentNode.CRAFT: ParentNode.CRAFT,
-    ParentNode.EXPLORATION: ParentNode.EXPLORATION,
-    ParentNode.TRADE: ParentNode.TRADE,
-    ParentNode.QUEST: ParentNode.QUEST,
-    ParentNode.DIALOGUE: ParentNode.DIALOGUE,
-    ParentNode.SKILL_TRAINING: ParentNode.SKILL_TRAINING,
-    ParentNode.ASK_USER: ParentNode.ASK_USER,
-}
-```
-
-즉 decision node는 `next_node`를 쓰고, LangGraph는 그 값을 edge table에서 찾습니다.
-
-### Parent Direct Edges
-
-```python
-PARENT_DIRECT_EDGES = [
-    (ParentNode.BATTLE, ParentNode.RESPONSE),
-    (ParentNode.CRAFT, ParentNode.RESPONSE),
-    (ParentNode.EXPLORATION, ParentNode.RESPONSE),
-    (ParentNode.TRADE, ParentNode.RESPONSE),
-    (ParentNode.QUEST, ParentNode.RESPONSE),
-    (ParentNode.DIALOGUE, ParentNode.RESPONSE),
-    (ParentNode.SKILL_TRAINING, ParentNode.RESPONSE),
-    (ParentNode.RESPONSE, END),
-    (ParentNode.ASK_USER, END),
-]
-```
-
-scenario wrapper는 subgraph를 실행한 뒤 parent response로 갑니다. ask user는 바로 종료됩니다.
-
-## Battle Subgraph
-
-Battle subgraph는 전투 업무 흐름을 실행합니다.
-
-### Business Phases
-
-`domain/battle.py`의 `BattlePhase`가 업무 상태를 표현합니다.
+현재 scenario는 공통 `ScenarioNode` graph shape를 공유합니다.
 
 ```text
-PREPARE
-ACTION
-RESOLVE
-COMPLETE
-```
-
-### Business Events
-
-`BattleEvent`는 사용자가 선택하거나 LLM이 결정한 업무 event입니다.
-
-```text
-CONTINUE
-ATTACK
-DEFEND
-FLEE
-RETRY
-COMPLETE
-```
-
-### Business Flow Transition
-
-`flow/battle.py`의 `BATTLE_TRANSITIONS`가 phase/event transition table입니다.
-
-```text
-PREPARE --CONTINUE--> ACTION
-PREPARE --ATTACK--> RESOLVE
-PREPARE --DEFEND--> RESOLVE
-PREPARE --FLEE--> RESOLVE
-ACTION --ATTACK--> RESOLVE
-ACTION --DEFEND--> RESOLVE
-ACTION --FLEE--> RESOLVE
-RESOLVE --RETRY--> ACTION
-RESOLVE --COMPLETE--> COMPLETE
-```
-
-이 table은 LangGraph node를 모릅니다. 업무 phase만 다룹니다.
-
-### Battle Nodes
-
-```text
-ScenarioNode.DECISION
-ScenarioNode.FLOW
-ScenarioNode.HITL
-ScenarioNode.EXECUTE
-ScenarioNode.RESPONSE
-ScenarioNode.ASK_USER
-```
-
-### Battle Graph Shape
-
-`agent/graph/battle.py`:
-
-```text
-DECISION -> FLOW
+DECISION -> FLOW | RESPONSE | ASK_USER
 FLOW -> HITL | EXECUTE | RESPONSE | ASK_USER
-HITL -> DECISION | RESPONSE
+HITL -> DECISION | ASK_USER
 EXECUTE -> RESPONSE
 RESPONSE -> END
 ASK_USER -> END
 ```
 
-### Battle Decision Node
+각 node의 책임은 작게 유지합니다.
 
-`make_battle_decision_node`는 battle event를 결정합니다.
+| Node | 책임 |
+| --- | --- |
+| DECISION | 입력을 event/action/question 등으로 분류 |
+| FLOW | phase/event transition 검증 |
+| HITL | 사용자 입력이 더 필요한지 확인 |
+| EXECUTE | tool 또는 deterministic usecase 실행 |
+| RESPONSE | 사용자 응답 생성 |
+| ASK_USER | 다음 입력 요청 |
 
-입력 state에서 읽는 값:
+## Flow와 ScenarioNode를 나누는 이유
 
-```text
-phase
-human_input
-user_input
-```
-
-처리 순서:
-
-1. 현재 phase의 available actions를 만든다.
-2. 사용자 입력에서 명시적 event를 추론한다.
-3. 추론되면 LLM을 호출하지 않고 event를 확정한다.
-4. 추론되지 않으면 LLM structured output으로 `BattleDecision`을 받는다.
-5. `next_node = ScenarioNode.FLOW`를 반환한다.
-
-반환 예시:
-
-```python
-{
-    "phase": BattlePhase.PREPARE,
-    "event": BattleEvent.ATTACK,
-    "available_actions": [...],
-    "reason": "...",
-    "next_node": ScenarioNode.FLOW,
-}
-```
-
-### Battle Flow Node
-
-`battle_flow_node`는 business flow transition을 적용합니다.
-
-처리 순서:
-
-1. `state["phase"]`와 `state["event"]`를 읽는다.
-2. `resolve_battle_transition(phase, event)`로 flow rule을 찾는다.
-3. rule이 없으면 `ScenarioNode.ASK_USER`로 보낸다.
-4. rule이 있으면 `next_phase = rule.to_phase`를 얻는다.
-5. `ScenarioSpec.phase_to_node[next_phase]`로 LangGraph next node를 결정한다.
-
-중요한 점은 flow node가 두 단계를 연결한다는 것입니다.
+`flow/`는 업무 상태 전이를 설명합니다.
 
 ```text
-business event -> business phase -> LangGraph node
+BattlePhase.PREPARE + BattleEvent.ATTACK -> BattlePhase.RESOLVE
 ```
 
-예:
+`ScenarioNode`는 LangGraph 실행 단계를 설명합니다.
 
 ```text
-PREPARE + ATTACK
-  -> flow transition: RESOLVE
-  -> phase_to_node: ScenarioNode.EXECUTE
+BattlePhase.RESOLVE -> ScenarioNode.EXECUTE
 ```
 
-반환 state update:
+둘을 합치면 업무 규칙과 graph 실행 구조가 섞입니다. 분리하면 같은 graph shape를 유지하면서 scenario별 phase/event만 바꿀 수 있습니다.
 
-```python
-{
-    "phase": BattlePhase.RESOLVE,
-    "available_actions": serialize_battle_actions(BattlePhase.RESOLVE),
-    "next_node": ScenarioNode.EXECUTE,
-}
-```
+## Tool Execution
 
-### Battle Phase-To-Node Mapping
-
-`ScenarioSpec.phase_to_node`:
-
-```python
-BATTLE_SCENARIO = ScenarioSpec(
-    ...,
-    phase_to_node={
-        BattlePhase.ACTION: ScenarioNode.HITL,
-        BattlePhase.RESOLVE: ScenarioNode.EXECUTE,
-        BattlePhase.COMPLETE: ScenarioNode.RESPONSE,
-    },
-)
-```
-
-이 규칙은 flow transition table과 분리되어 있습니다. flow는 업무 phase만 알고, scenario definition이 phase를 공통 graph 실행 단계로 바꿉니다.
-
-### Battle HITL Node
-
-`battle_hitl_node`는 human input이 필요한 상황을 처리합니다.
-
-human input이 없으면 response를 만들고 종료 방향으로 보냅니다.
-
-```python
-{
-    "response": "HITL 필요: ...",
-    "next_node": ScenarioNode.RESPONSE,
-}
-```
-
-human input이 있으면 다시 decision으로 보냅니다.
-
-```python
-{
-    "next_node": ScenarioNode.DECISION,
-}
-```
-
-### Battle Execute Node
-
-`battle_execute_tool_node`는 직접 tool 실행 로직을 들고 있지 않습니다. `engine/tool_runner.py`의 `execute_battle_tool`에 위임합니다.
-
-runtime 처리 순서:
-
-1. `BattleEvent`를 tool action 문자열로 변환한다.
-2. hydrated `resolve_battle_tool`을 invoke한다.
-3. tool이 application usecase `resolve_battle_action`을 호출한다.
-4. tool result를 raw/llm/ui payload로 projection한다.
-5. store에 payload를 저장한다.
-6. `latest_refs`, `history_refs`, `response`, `next_node`를 반환한다.
-
-store 저장 형태:
+tool-backed scenario는 다음 순서로 실행됩니다.
 
 ```text
-battle / resolve / raw / latest
-battle / resolve / llm / latest
-battle / resolve / ui / latest
-battle / resolve / raw / history / 1
+event
+  -> ToolBinding
+  -> tool input
+  -> LangChain @tool
+  -> application usecase
+  -> domain result
+  -> raw/llm/ui projection
+  -> store persistence
+```
+
+`ActionCard`는 LLM에게 보여주는 행동 후보입니다. tool-backed action의 `tool_name`, `state_effect`, `risk` metadata는 `ToolBinding`에서 파생됩니다.
+
+LLM은 action metadata를 참고해 event를 고를 수 있지만 tool을 직접 실행하지 않습니다. runtime이 flow 전이를 검증한 뒤 `ToolBinding`으로 tool input을 만들고 실행합니다.
+
+## State Persistence
+
+subgraph wrapper는 scenario state를 store에 저장합니다.
+
+```text
+<scenario> / state / latest
+```
+
+tool result는 payload 종류별로 저장합니다.
+
+```text
+<scenario> / <phase> / raw / latest
+<scenario> / <phase> / llm / latest
+<scenario> / <phase> / ui / latest
+<scenario> / <phase> / raw / history / 1
 ...
 ```
 
-graph state에는 store ref만 남깁니다.
+graph state에는 latest/history ref만 남깁니다.
 
 ```python
 {
     "latest_refs": {
-        "resolve.raw": "store://battle/resolve/raw/latest",
-        "resolve.llm": "store://battle/resolve/llm/latest",
-        "resolve.ui": "store://battle/resolve/ui/latest",
+        "result.raw": "store://craft/result/raw/latest"
     },
     "history_refs": {
-        "resolve.raw": ["store://battle/resolve/raw/history/1"],
-        ...
+        "result.raw": ["store://craft/result/raw/history/1"]
     },
-    "response": "...",
-    "next_node": ScenarioNode.RESPONSE,
 }
 ```
 
-### Battle Response Node
+Wrapper는 scenario lifecycle도 관리합니다. subgraph 결과 phase가 `ScenarioSpec.terminal_phases`에 포함되면 `current_subgraph`를 비워 다음 입력을 새 scenario 선택으로 처리합니다. terminal phase가 아니면 같은 scenario를 계속 active session으로 유지합니다.
 
-response가 이미 있으면 그대로 반환합니다. tool 실행 결과처럼 concrete response가 있을 때 LLM이 불필요하게 다시 요약하지 않도록 하기 위함입니다.
+## Runtime-Only Keys
 
-response가 없으면 `build_battle_response_prompt(state)`를 사용해 LLM response를 생성합니다.
+`next_node`는 LangGraph routing을 위한 runtime-only key입니다.
 
-## Craft Subgraph
-
-Craft subgraph는 제작 업무 흐름을 실행합니다.
-
-### Business Phases
-
-```text
-SELECT_RECIPE
-CRAFT
-RESULT
-COMPLETE
-```
-
-### Business Events
-
-```text
-CONTINUE
-CRAFT_POTION
-CRAFT_SWORD
-RETRY
-COMPLETE
-```
-
-### Business Flow Transition
-
-`flow/craft.py`의 `CRAFT_TRANSITIONS`:
-
-```text
-SELECT_RECIPE --CONTINUE--> CRAFT
-SELECT_RECIPE --CRAFT_POTION--> RESULT
-SELECT_RECIPE --CRAFT_SWORD--> RESULT
-CRAFT --CRAFT_POTION--> RESULT
-CRAFT --CRAFT_SWORD--> RESULT
-RESULT --RETRY--> CRAFT
-RESULT --COMPLETE--> COMPLETE
-```
-
-### Craft Nodes
-
-```text
-ScenarioNode.DECISION
-ScenarioNode.FLOW
-ScenarioNode.HITL
-ScenarioNode.EXECUTE
-ScenarioNode.RESPONSE
-ScenarioNode.ASK_USER
-```
-
-### Craft Graph Shape
-
-```text
-DECISION -> FLOW | ASK_USER
-FLOW -> HITL | EXECUTE | RESPONSE | ASK_USER
-HITL -> DECISION | RESPONSE | ASK_USER
-EXECUTE -> RESPONSE
-RESPONSE -> END
-ASK_USER -> END
-```
-
-Battle과 다른 점은 `DECISION`에서 바로 `ASK_USER`로 갈 수 있다는 점입니다. “제작하고 싶어”처럼 recipe가 없는 입력은 제작할 아이템을 물어야 합니다.
-
-### Craft Decision Node
-
-처리 순서:
-
-1. 현재 phase의 available actions를 만든다.
-2. 명시적 recipe intent를 추론한다.
-3. recipe가 있으면 `ScenarioNode.FLOW`로 보낸다.
-4. `SELECT_RECIPE` phase에서 recipe가 없으면 `CONTINUE` event로 `FLOW`에 보낸다.
-5. `CRAFT` phase에서 recipe가 없으면 `ASK_USER`로 보낸다.
-6. 그 외에는 LLM structured output으로 `CraftDecision`을 받는다.
-
-이 로직 때문에 다음 UX가 가능합니다.
-
-```text
-> 제작하고 싶어
-제작할 아이템을 선택해 주세요. 가능한 선택: 포션 / 검
-> 포션
-potion 제작 성공
-```
-
-### Craft Flow Node
-
-`craft_flow_node`는 `resolve_craft_transition(phase, event)`로 business flow rule을 찾고, `ScenarioSpec.phase_to_node[next_phase]`로 LangGraph next node를 고릅니다.
-
-`ScenarioSpec.phase_to_node`:
-
-```python
-CRAFT_SCENARIO = ScenarioSpec(
-    ...,
-    phase_to_node={
-        CraftPhase.CRAFT: ScenarioNode.HITL,
-        CraftPhase.RESULT: ScenarioNode.EXECUTE,
-        CraftPhase.COMPLETE: ScenarioNode.RESPONSE,
-    },
-)
-```
-
-예:
-
-```text
-SELECT_RECIPE + CONTINUE
-  -> flow transition: CRAFT
-  -> phase_to_node: ScenarioNode.HITL
-```
-
-```text
-CRAFT + CRAFT_POTION
-  -> flow transition: RESULT
-  -> phase_to_node: ScenarioNode.EXECUTE
-```
-
-### Craft HITL Node
-
-`craft_hitl_node`는 recipe 선택이 필요한지 확인합니다.
-
-recipe가 없으면:
-
-```python
-{
-    "response": "HITL 필요: 제작할 아이템을 선택하세요. ...",
-    "next_node": ScenarioNode.ASK_USER,
-}
-```
-
-recipe가 있으면:
-
-```python
-{
-    "next_node": ScenarioNode.DECISION,
-}
-```
-
-### Craft Execute Node
-
-`craft_execute_tool_node`는 `engine/tool_runner.py`의 `execute_craft_tool`에 위임합니다.
-
-runtime 처리 순서:
-
-1. `CraftEvent`를 recipe 문자열로 변환한다.
-2. hydrated `craft_item_tool`을 invoke한다.
-3. tool이 application usecase `craft_item`을 호출한다.
-4. tool result를 raw/llm/ui payload로 projection한다.
-5. store에 payload를 저장한다.
-6. response와 refs를 반환한다.
-
-저장 namespace:
-
-```text
-craft / result / raw / latest
-craft / result / llm / latest
-craft / result / ui / latest
-craft / result / raw / history / 1
-...
-```
-
-### Craft Follow-up Handling
-
-Craft wrapper는 subgraph를 실행하기 전에 이전 craft result에 대한 follow-up 질문인지 확인합니다.
-
-위치는 `scenarios/registry.py`입니다.
-
-```text
-parent graph
-  -> craft wrapper
-    -> load saved craft state
-    -> load latest craft result ui payload
-    -> answer_craft_result_question(...)
-```
-
-예:
-
-```text
-> 포션
-potion 제작 성공
-> 어떤 포션이야?
-방금 제작한 potion은 healing_potion입니다.
-```
-
-이 응답은 LLM이나 tool을 다시 호출하지 않고 `flow/craft.py`의 간단한 flow 함수로 처리됩니다.
-
-## State Persistence
-
-Parent graph는 각 subgraph state를 store에 저장합니다.
-
-```text
-<scenario> state -> namespace=("<scenario>", "state"), key="latest"
-```
-
-Parent state에는 직접 전체 subgraph state를 넣지 않고 store ref만 넣습니다.
-
-```python
-{
-    "store_refs": {
-        "battle_state": "store://battle/state/latest",
-        "craft_state": "store://craft/state/latest",
-        "quest_state": "store://quest/state/latest",
-    }
-}
-```
-
-이렇게 하면 parent graph state가 커지는 것을 막고, tool payload history도 store에서 관리할 수 있습니다.
-
-## Runtime-only Keys
-
-`next_node`는 LangGraph routing을 위한 runtime-only key입니다. 저장할 필요가 없습니다.
-
-그래서 subgraph state를 저장하기 전에 `remove_runtime_routing`이 `next_node`를 제거합니다.
-
-```python
-def remove_runtime_routing(state):
-    persisted_state = dict(state)
-    persisted_state.pop("next_node", None)
-    return persisted_state
-```
-
-테스트에서도 persisted state에 `next_node`가 없는지 확인합니다.
-
-## 왜 flow와 ScenarioNode를 나누는가
-
-`flow/*.py`는 business transition입니다.
-
-```text
-현재 phase와 event가 주어졌을 때 다음 업무 phase는 무엇인가?
-```
-
-`ScenarioSpec.phase_to_node`는 phase-to-node mapping입니다.
-
-```text
-업무 phase가 결정된 뒤 어떤 공통 ScenarioNode를 실행해야 하는가?
-```
-
-`agent/graph/scenario_graph.py`는 공통 LangGraph node shape입니다.
-
-```text
-ScenarioNode 사이에 어떤 실행 경로가 있는가?
-```
-
-이 셋을 합치면 다음 순서가 됩니다.
-
-```text
-user input
-  -> decision node
-  -> event
-  -> flow transition
-  -> next business phase
-  -> ScenarioSpec.phase_to_node
-  -> ScenarioNode
-  -> generic scenario graph
-  -> actual LangGraph transition
-```
-
-이 분리 덕분에 업무 흐름을 바꾸는 작업은 flow와 scenario definition에 머물고, LangGraph node 구조는 공통 graph shape 안에 머뭅니다.
+state를 저장하기 전에 `remove_runtime_routing()`이 `next_node`를 제거합니다. 저장된 state는 다음 입력을 이어가기 위한 업무 상태만 포함해야 합니다.
 
 ## Error Handling
 
 LLM provider 예외는 outbound adapter에서 application-level error로 변환됩니다.
 
 ```text
-Gemini/OpenAI provider error
+provider exception
   -> LLMError or LLMQuotaExceededError
-  -> inbound/cli/main.py
-  -> user-facing message
+  -> CLI-safe message
 ```
 
 CLI는 provider-specific exception을 알 필요가 없습니다.
 
 ## Testing Focus
 
-테스트는 계층별로 나뉩니다.
+테스트는 다음을 검증합니다.
 
-- domain: 순수 게임 판정
+- domain: 순수 도메인 판정
 - flow: phase/event transition table
-- scenarios: intent inference와 ScenarioSpec
-- agent transitions: parent graph edge table
-- agent graph: 실제 graph invoke와 store refs
+- scenarios: intent 감지와 ScenarioSpec
+- agent graph: parent/scenario graph invoke
 - usecases/tools: usecase와 tool projection
 - settings/llm testing: 설정, fake LLM, LLM factory
 

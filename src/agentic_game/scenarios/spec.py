@@ -24,3 +24,4 @@ class ScenarioSpec[PhaseT, EventT]:
     initial_phase: PhaseT
     transitions: Sequence[TransitionRule[PhaseT, EventT]]
     phase_to_node: Mapping[PhaseT, ScenarioNode]
+    terminal_phases: Sequence[PhaseT] = ()

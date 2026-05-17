@@ -98,6 +98,7 @@ def build_scenario_definition_subgraph(adapter: ScenarioGraphDefinition):
 
 SIMPLE_SCENARIO_DECISION_EDGES = {
     ScenarioNode.FLOW: ScenarioNode.FLOW,
+    ScenarioNode.RESPONSE: ScenarioNode.RESPONSE,
     ScenarioNode.ASK_USER: ScenarioNode.ASK_USER,
 }
 

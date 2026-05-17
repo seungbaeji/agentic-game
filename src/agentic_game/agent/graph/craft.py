@@ -17,7 +17,7 @@ from agentic_game.agent.nodes.craft import (
 from agentic_game.agent.nodes.scenario_nodes import scenario_decision_route, scenario_route
 from agentic_game.agent.state import CraftState
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
-from agentic_game.domain.craft import CraftResult
+from agentic_game.application.usecases.craft import CraftItemResult
 from agentic_game.engine.tool_runner import ToolInvoker
 
 
@@ -25,7 +25,7 @@ def build_craft_subgraph(
     store: StorePort,
     llm: LLMPort,
     craft_item_tool: ToolInvoker,
-    craft_item: Callable[..., CraftResult],
+    craft_item: Callable[..., CraftItemResult],
     random: RandomPort,
 ):
     """Build the LangGraph subgraph that runs the craft workflow."""
@@ -34,6 +34,7 @@ def build_craft_subgraph(
         return craft_execute_tool_node(
             state,
             store=store,
+            llm=llm,
             craft_item_tool=craft_item_tool,
             craft_item=craft_item,
             random=random,

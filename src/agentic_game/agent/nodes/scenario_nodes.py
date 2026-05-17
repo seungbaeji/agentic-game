@@ -13,8 +13,8 @@ def make_decision_node[PhaseT, EventT](
     *,
     default_phase: PhaseT,
     serialize_actions: Callable[[PhaseT], Any],
-    infer_event: Callable[[PhaseT, str], EventT | None],
-    inferred_reason: str,
+    detect_event: Callable[[PhaseT, str], EventT | None],
+    detected_reason: str,
     fallback_reason: str,
     default_events: Mapping[PhaseT, tuple[EventT, str]] | None = None,
 ) -> Callable[[ScenarioState], ScenarioState]:
@@ -24,14 +24,14 @@ def make_decision_node[PhaseT, EventT](
         phase = state.get("phase", default_phase)
         available_actions = serialize_actions(phase)
         user_text = state.get("human_input") or state.get("user_input", "")
-        inferred_event = infer_event(phase, user_text)
+        detected_event = detect_event(phase, user_text)
 
-        if inferred_event is not None:
+        if detected_event is not None:
             return {
                 "phase": phase,
-                "event": inferred_event,
+                "event": detected_event,
                 "available_actions": available_actions,
-                "reason": inferred_reason,
+                "reason": detected_reason,
                 "next_node": ScenarioNode.FLOW,
             }
 
@@ -89,16 +89,16 @@ def make_flow_node[PhaseT, EventT, NodeT](
 def make_hitl_node[PhaseT, EventT](
     *,
     default_phase: PhaseT,
-    infer_event: Callable[[PhaseT, str], EventT | None],
+    detect_event: Callable[[PhaseT, str], EventT | None],
     prompt: str,
 ) -> Callable[[ScenarioState], ScenarioState]:
-    """Create a HITL node that asks for input until an event can be inferred."""
+    """Create a HITL node that asks for input until an event can be detected."""
 
     def hitl_node(state: ScenarioState) -> ScenarioState:
         phase = state.get("phase", default_phase)
         human_input = state.get("human_input", "")
 
-        if infer_event(phase, human_input) is None:
+        if detect_event(phase, human_input) is None:
             return {
                 "response": prompt,
                 "next_node": ScenarioNode.ASK_USER,

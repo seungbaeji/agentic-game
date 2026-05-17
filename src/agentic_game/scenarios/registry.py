@@ -15,8 +15,10 @@ from agentic_game.agent.models import ParentNode, SubgraphName
 from agentic_game.agent.state import CraftState, ParentState
 from agentic_game.agent.types import RuntimePayload, StoreRefs
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
-from agentic_game.domain.battle import BattlePhase, BattleResult
-from agentic_game.domain.craft import CraftPhase, CraftResult
+from agentic_game.application.usecases.battle import BattleActionResult
+from agentic_game.application.usecases.craft import CraftItemResult
+from agentic_game.domain.battle import BattlePhase
+from agentic_game.domain.craft import CraftPhase
 from agentic_game.domain.dialogue import DialoguePhase
 from agentic_game.domain.exploration import ExplorationPhase
 from agentic_game.domain.quest import QuestPhase
@@ -25,6 +27,15 @@ from agentic_game.domain.trade import TradePhase
 from agentic_game.engine.subgraph import make_simple_subgraph_wrapper, make_subgraph_wrapper
 from agentic_game.engine.tool_runner import ToolInvoker
 from agentic_game.flow.craft import answer_craft_result_question
+from agentic_game.scenarios.definitions import (
+    BATTLE_SCENARIO,
+    CRAFT_SCENARIO,
+    DIALOGUE_SCENARIO,
+    EXPLORATION_SCENARIO,
+    QUEST_SCENARIO,
+    SKILL_TRAINING_SCENARIO,
+    TRADE_SCENARIO,
+)
 
 
 def load_latest_craft_result(
@@ -51,7 +62,7 @@ def make_battle_wrapper(
     store: StorePort,
     llm: LLMPort,
     resolve_battle_tool: ToolInvoker,
-    resolve_battle_action: Callable[..., BattleResult],
+    resolve_battle_action: Callable[..., BattleActionResult],
     random: RandomPort,
 ):
     """Create the parent node that invokes and persists the battle subgraph."""
@@ -74,6 +85,7 @@ def make_battle_wrapper(
             "latest_refs": {},
             "history_refs": {},
         },
+        terminal_phases=BATTLE_SCENARIO.terminal_phases,
     )
 
 
@@ -81,7 +93,7 @@ def make_craft_wrapper(
     store: StorePort,
     llm: LLMPort,
     craft_item_tool: ToolInvoker,
-    craft_item: Callable[..., CraftResult],
+    craft_item: Callable[..., CraftItemResult],
     random: RandomPort,
 ):
     """Create the parent node that invokes and persists the craft subgraph."""
@@ -125,6 +137,7 @@ def make_craft_wrapper(
             "latest_refs": {},
             "history_refs": {},
         },
+        terminal_phases=CRAFT_SCENARIO.terminal_phases,
         before_invoke=answer_followup,
     )
 
@@ -133,19 +146,24 @@ def make_exploration_wrapper(store: StorePort):
     """Create the parent node that invokes and persists the exploration subgraph."""
     return make_simple_subgraph_wrapper(
         store=store,
-        graph=build_exploration_subgraph(),
+        graph=build_exploration_subgraph(store),
         subgraph=SubgraphName.EXPLORATION,
         initial_phase=ExplorationPhase.START,
+        terminal_phases=EXPLORATION_SCENARIO.terminal_phases,
     )
 
 
-def make_trade_wrapper(store: StorePort):
+def make_trade_wrapper(
+    store: StorePort,
+    exchange_item_tool: ToolInvoker,
+):
     """Create the parent node that invokes and persists the trade subgraph."""
     return make_simple_subgraph_wrapper(
         store=store,
-        graph=build_trade_subgraph(),
+        graph=build_trade_subgraph(store, exchange_item_tool),
         subgraph=SubgraphName.TRADE,
         initial_phase=TradePhase.BROWSE,
+        terminal_phases=TRADE_SCENARIO.terminal_phases,
     )
 
 
@@ -153,19 +171,21 @@ def make_quest_wrapper(store: StorePort):
     """Create the parent node that invokes and persists the quest subgraph."""
     return make_simple_subgraph_wrapper(
         store=store,
-        graph=build_quest_subgraph(),
+        graph=build_quest_subgraph(store),
         subgraph=SubgraphName.QUEST,
         initial_phase=QuestPhase.AVAILABLE,
+        terminal_phases=QUEST_SCENARIO.terminal_phases,
     )
 
 
-def make_dialogue_wrapper(store: StorePort):
+def make_dialogue_wrapper(store: StorePort, llm: LLMPort):
     """Create the parent node that invokes and persists the dialogue subgraph."""
     return make_simple_subgraph_wrapper(
         store=store,
-        graph=build_dialogue_subgraph(),
+        graph=build_dialogue_subgraph(store, llm),
         subgraph=SubgraphName.DIALOGUE,
         initial_phase=DialoguePhase.GREETING,
+        terminal_phases=DIALOGUE_SCENARIO.terminal_phases,
     )
 
 
@@ -173,7 +193,8 @@ def make_skill_training_wrapper(store: StorePort):
     """Create the parent node that invokes and persists the skill training subgraph."""
     return make_simple_subgraph_wrapper(
         store=store,
-        graph=build_skill_training_subgraph(),
+        graph=build_skill_training_subgraph(store),
         subgraph=SubgraphName.SKILL_TRAINING,
         initial_phase=SkillTrainingPhase.SELECT_SKILL,
+        terminal_phases=SKILL_TRAINING_SCENARIO.terminal_phases,
     )

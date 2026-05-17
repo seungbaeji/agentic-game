@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from typing import Protocol
 
 from agentic_game.agent.models import ParentNode, SubgraphName
@@ -36,9 +36,11 @@ def make_subgraph_wrapper(
     state_ref_key: str,
     state_namespace: tuple[str, str],
     initial_state: RuntimePayload,
+    terminal_phases: Sequence[object] = (),
     before_invoke: BeforeInvokeHook | None = None,
 ):
     """Create a parent node that loads, invokes, and persists a subgraph."""
+    terminal_phase_set = set(terminal_phases)
 
     def subgraph_node(state: ParentState) -> ParentState:
         refs = dict(state.get("store_refs", {}))
@@ -68,8 +70,10 @@ def make_subgraph_wrapper(
             value=remove_runtime_routing(result),
         )
 
+        current_subgraph = None if result.get("phase") in terminal_phase_set else subgraph
+
         return {
-            "current_subgraph": subgraph,
+            "current_subgraph": current_subgraph,
             "store_refs": refs,
             "response": result.get("response", ""),
             "next_node": ParentNode.RESPONSE,
@@ -84,6 +88,7 @@ def make_simple_subgraph_wrapper(
     graph: InvokableGraph,
     subgraph: SubgraphName,
     initial_phase: object,
+    terminal_phases: Sequence[object] = (),
 ):
     """Create a wrapper for a scenario with standard state persistence keys."""
     subgraph_name = subgraph.value
@@ -98,4 +103,5 @@ def make_simple_subgraph_wrapper(
             "latest_refs": {},
             "history_refs": {},
         },
+        terminal_phases=terminal_phases,
     )

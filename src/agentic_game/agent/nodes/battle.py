@@ -9,14 +9,16 @@ from agentic_game.agent.prompts import (
     build_battle_response_prompt,
 )
 from agentic_game.agent.state import BattleState
+from agentic_game.application.content_generation import generate_battle_narration
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
-from agentic_game.domain.battle import BattlePhase, BattleResult
+from agentic_game.application.usecases.battle import BattleActionResult
+from agentic_game.domain.battle import BattlePhase
 from agentic_game.engine.tool_runner import ToolInvoker, execute_battle_tool
 from agentic_game.flow.battle import (
     serialize_battle_actions,
 )
-from agentic_game.scenarios.battle import infer_battle_event
 from agentic_game.scenarios.definitions import BATTLE_SCENARIO
+from agentic_game.scenarios.intent import detect_battle_event
 from agentic_game.scenarios.spec import ScenarioNode
 
 _battle_flow_node = make_flow_node(
@@ -34,12 +36,12 @@ def make_battle_decision_node(llm: LLMPort):
         phase = state.get("phase", BattlePhase.PREPARE)
         available_actions = serialize_battle_actions(phase)
         user_text = state.get("human_input") or state.get("user_input", "")
-        inferred_event = infer_battle_event(phase, user_text)
+        detected_event = detect_battle_event(phase, user_text)
 
-        if inferred_event is not None:
+        if detected_event is not None:
             return {
                 "phase": phase,
-                "event": inferred_event,
+                "event": detected_event,
                 "available_actions": available_actions,
                 "reason": "user_input에서 명시적인 전투 행동을 감지했습니다.",
                 "next_node": ScenarioNode.FLOW,
@@ -87,8 +89,9 @@ def battle_execute_tool_node(
     state: BattleState,
     *,
     store: StorePort,
+    llm: LLMPort,
     resolve_battle_tool: ToolInvoker,
-    resolve_battle_action: Callable[..., BattleResult],
+    resolve_battle_action: Callable[..., BattleActionResult],
     random: RandomPort,
 ) -> BattleState:
     """Invoke the battle tool and persist its raw, LLM, and UI payloads."""
@@ -98,6 +101,12 @@ def battle_execute_tool_node(
         resolve_battle_tool=resolve_battle_tool,
         resolve_battle_action=resolve_battle_action,
         random=random,
+        summarize_tool_result=lambda tool_result: generate_battle_narration(
+            llm=llm,
+            raw=tool_result.raw,
+            llm_payload=tool_result.llm,
+        )
+        or tool_result.llm["summary"],
     )
 
 
@@ -126,4 +135,3 @@ def battle_ask_user_node(state: BattleState) -> BattleState:
     return {
         "response": "전투 행동을 선택해 주세요. 가능한 행동: 공격 / 방어 / 도망",
     }
-

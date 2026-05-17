@@ -1,5 +1,5 @@
 site_name: agentic-game
-site_description: LangGraph 기반 전투/제작 샘플 에이전트
+site_description: LangGraph 기반 phase/event agent workflow runtime 실험
 repo_url: https://github.com/seungbaeji/agentic-game
 
 theme:
@@ -13,8 +13,11 @@ theme:
 
 nav:
   - Home: index.md
+  - Glossary: glossary.md
   - Architecture: architecture.md
-  - Node Flow And Transitions: node-flow.md
+  - Runtime Flow: node-flow.md
+  - Scenario Details: scenario-details.md
+  - Tool Calling Comparison: tool-calling-comparison.md
 
 markdown_extensions:
   - admonition

@@ -49,7 +49,7 @@ from agentic_game.scenarios.spec import ScenarioNode
 class ParentState(TypedDict, total=False):
     user_input: UserInput
     target_subgraph: SubgraphName
-    current_subgraph: SubgraphName
+    current_subgraph: SubgraphName | None
     store_refs: StoreRefs
     response: ResponseText
     reason: ReasonText
@@ -78,6 +78,8 @@ class CraftState(TypedDict, total=False):
 
     phase: CraftPhase
     event: CraftEvent
+    craft_plan: dict[str, str | None]
+    input_intent: str
 
     latest_refs: StoreRefs
     history_refs: HistoryRefs
@@ -142,6 +144,8 @@ class DialogueState(TypedDict, total=False):
 
     phase: DialoguePhase
     event: DialogueEvent
+    input_intent: str
+    last_topic: str
 
     latest_refs: StoreRefs
     history_refs: HistoryRefs
@@ -158,6 +162,7 @@ class SkillTrainingState(TypedDict, total=False):
 
     phase: SkillTrainingPhase
     event: SkillTrainingEvent
+    selected_skill: str
 
     latest_refs: StoreRefs
     history_refs: HistoryRefs
