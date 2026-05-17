@@ -7,16 +7,17 @@ from agentic_game.agent.graph.scenario_graph import (
 from agentic_game.agent.nodes.exploration import (
     exploration_ask_user_node,
     exploration_decision_node,
-    exploration_execute_node,
     exploration_flow_node,
     exploration_hitl_node,
     exploration_response_node,
+    make_exploration_execute_node,
 )
 from agentic_game.agent.nodes.scenario_nodes import scenario_decision_route, scenario_route
 from agentic_game.agent.state import ExplorationState
+from agentic_game.application.ports import StorePort
 
 
-def build_exploration_subgraph():
+def build_exploration_subgraph(store: StorePort):
     """Build the LangGraph subgraph that runs the exploration workflow."""
     return build_simple_scenario_subgraph(
         state_schema=ExplorationState,
@@ -24,7 +25,7 @@ def build_exploration_subgraph():
             decision=exploration_decision_node,
             flow=exploration_flow_node,
             hitl=exploration_hitl_node,
-            execute=exploration_execute_node,
+            execute=make_exploration_execute_node(store),
             response=exploration_response_node,
             ask_user=exploration_ask_user_node,
         ),

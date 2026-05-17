@@ -7,6 +7,7 @@ from agentic_game.application.usecases import (
     complete_quest,
     craft_item,
     craft_item_and_store_reward,
+    discover_exploration_location,
     exchange_item,
     level_up_trained_skill,
     mark_quest_progress,
@@ -15,6 +16,7 @@ from agentic_game.application.usecases import (
     resolve_battle_action_and_store_player,
 )
 from agentic_game.domain.battle import BattleOutcome
+from agentic_game.domain.exploration import ExplorationEvent
 from agentic_game.outbound.store import LangGraphStoreAdapter
 from agentic_game.tools import craft_item_tool, resolve_battle_tool
 from agentic_game.tools.types import ToolResult
@@ -127,6 +129,22 @@ def test_quest_usecases_update_quest_log_and_player_rewards() -> None:
     assert quest_log.quests[0].progress == 100
     assert player.exp == 25
     assert player.gold == 120
+
+
+def test_exploration_usecase_updates_world_state() -> None:
+    store = LangGraphStoreAdapter(InMemoryStore())
+    game_state = GameStateRepository(store)
+
+    result = discover_exploration_location(
+        event=ExplorationEvent.TAKE_FOREST,
+        game_state=game_state,
+    )
+
+    world = game_state.load_world()
+
+    assert result.location_id == "forest_path"
+    assert world.current_location == "forest_path"
+    assert world.discovered_locations == ("forest_path",)
 
 
 def test_tool_schema_hides_injected_dependencies() -> None:

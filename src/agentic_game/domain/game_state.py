@@ -45,6 +45,12 @@ class QuestLog:
     quests: tuple[QuestProgress, ...] = ()
 
 
+@dataclass(frozen=True, slots=True)
+class WorldState:
+    current_location: str = "town"
+    discovered_locations: tuple[str, ...] = ()
+
+
 def add_inventory_item(
     inventory: InventoryState,
     *,
@@ -157,6 +163,22 @@ def update_quest_progress(
         )
 
     return QuestLog(quests=tuple(updated_quests))
+
+
+def discover_location(
+    world: WorldState,
+    *,
+    location_id: str,
+) -> WorldState:
+    """Return world state after visiting and discovering a location."""
+    discovered = list(world.discovered_locations)
+    if location_id not in discovered:
+        discovered.append(location_id)
+
+    return WorldState(
+        current_location=location_id,
+        discovered_locations=tuple(discovered),
+    )
 
 
 def level_up_skill(

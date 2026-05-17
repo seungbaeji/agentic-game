@@ -3,6 +3,7 @@ from agentic_game.application.usecases.battle import (
     resolve_battle_action_and_store_player,
 )
 from agentic_game.application.usecases.craft import craft_item, craft_item_and_store_reward
+from agentic_game.application.usecases.exploration import discover_exploration_location
 from agentic_game.application.usecases.quest import complete_quest, mark_quest_progress
 from agentic_game.application.usecases.skill_training import (
     level_up_trained_skill,
@@ -14,6 +15,7 @@ __all__ = [
     "complete_quest",
     "craft_item",
     "craft_item_and_store_reward",
+    "discover_exploration_location",
     "exchange_item",
     "level_up_trained_skill",
     "mark_quest_progress",

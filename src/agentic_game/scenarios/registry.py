@@ -135,7 +135,7 @@ def make_exploration_wrapper(store: StorePort):
     """Create the parent node that invokes and persists the exploration subgraph."""
     return make_simple_subgraph_wrapper(
         store=store,
-        graph=build_exploration_subgraph(),
+        graph=build_exploration_subgraph(store),
         subgraph=SubgraphName.EXPLORATION,
         initial_phase=ExplorationPhase.START,
     )

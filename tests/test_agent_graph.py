@@ -174,6 +174,10 @@ def test_agent_graph_routes_exploration_and_keeps_context() -> None:
     assert saved_state["event"] == "take_forest"
     assert "next_node" not in saved_state
 
+    world = container.store.get(namespace=("game", "world"), key="latest")
+    assert world.current_location == "forest_path"
+    assert world.discovered_locations == ("forest_path",)
+
 
 def test_agent_graph_routes_trade_and_keeps_context_until_exchange() -> None:
     llm = TestingLLMAdapter()

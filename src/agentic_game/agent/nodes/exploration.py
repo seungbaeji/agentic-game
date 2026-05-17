@@ -7,6 +7,11 @@ from agentic_game.agent.nodes.scenario_nodes import (
     make_hitl_node,
 )
 from agentic_game.agent.state import ExplorationState
+from agentic_game.application.game_state import GameStateRepository
+from agentic_game.application.ports import StorePort
+from agentic_game.application.usecases.exploration import (
+    discover_exploration_location,
+)
 from agentic_game.domain.exploration import ExplorationEvent, ExplorationPhase
 from agentic_game.flow.exploration import serialize_exploration_actions
 from agentic_game.scenarios.definitions import EXPLORATION_SCENARIO
@@ -38,18 +43,27 @@ exploration_hitl_node = make_hitl_node(
 )
 
 
-def exploration_execute_node(state: ExplorationState) -> ExplorationState:
-    """Resolve a lightweight exploration encounter."""
-    event = state.get("event")
-    if event == ExplorationEvent.TAKE_FOREST:
-        response = "숲길에서 낯선 흔적을 발견했습니다. 조사하거나 후퇴할 수 있습니다."
-    else:
-        response = "탐험 중 새로운 단서를 발견했습니다."
+def make_exploration_execute_node(store: StorePort):
+    """Create a node that stores discovered exploration locations."""
 
-    return {
-        "response": response,
-        "next_node": ScenarioNode.RESPONSE,
-    }
+    def exploration_execute_node(state: ExplorationState) -> ExplorationState:
+        """Resolve a lightweight exploration encounter."""
+        event = state.get("event")
+        result = discover_exploration_location(
+            event=event,
+            game_state=GameStateRepository(store),
+        )
+        if event == ExplorationEvent.TAKE_FOREST:
+            response = "숲길에서 낯선 흔적을 발견했습니다. 조사하거나 후퇴할 수 있습니다."
+        else:
+            response = f"{result.location_id}에서 새로운 단서를 발견했습니다."
+
+        return {
+            "response": response,
+            "next_node": ScenarioNode.RESPONSE,
+        }
+
+    return exploration_execute_node
 
 
 def exploration_response_node(state: ExplorationState) -> ExplorationState:

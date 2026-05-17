@@ -6,9 +6,11 @@ from agentic_game.domain.game_state import (
     PlayerState,
     QuestLog,
     SkillBook,
+    WorldState,
     add_inventory_item,
     add_skill_exp,
     apply_player_delta,
+    discover_location,
     level_up_skill,
     update_quest_progress,
 )
@@ -21,6 +23,8 @@ SKILLS_NAMESPACE = ("game", "skills")
 SKILLS_KEY = "latest"
 QUESTS_NAMESPACE = ("game", "quests")
 QUESTS_KEY = "latest"
+WORLD_NAMESPACE = ("game", "world")
+WORLD_KEY = "latest"
 
 
 class GameStateRepository:
@@ -181,3 +185,35 @@ class GameStateRepository:
         )
         self.save_quests(quest_log)
         return quest_log
+
+    def load_world(self) -> WorldState:
+        """Load world state, returning the default world when none exists."""
+        try:
+            value = self._store.get(
+                namespace=WORLD_NAMESPACE,
+                key=WORLD_KEY,
+            )
+        except KeyError:
+            return WorldState()
+
+        if isinstance(value, WorldState):
+            return value
+
+        return WorldState()
+
+    def save_world(self, world: WorldState) -> str:
+        """Persist world state and return its store reference."""
+        return self._store.put(
+            namespace=WORLD_NAMESPACE,
+            key=WORLD_KEY,
+            value=world,
+        )
+
+    def discover_location(self, *, location_id: str) -> WorldState:
+        """Discover a location and persist the updated world state."""
+        world = discover_location(
+            self.load_world(),
+            location_id=location_id,
+        )
+        self.save_world(world)
+        return world
