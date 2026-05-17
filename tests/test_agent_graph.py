@@ -306,6 +306,14 @@ def test_agent_graph_routes_dialogue_and_keeps_context_until_reward() -> None:
     assert saved_state["event"] == "thank"
     assert "next_node" not in saved_state
 
+    npc_memory = container.store.get(namespace=("game", "npcs"), key="latest")
+    assert npc_memory.npcs[0].npc_id == "village_elder"
+    assert npc_memory.npcs[0].relation == 1
+    assert npc_memory.npcs[0].memories == (
+        "old_ruins_rumor",
+        "received_thanks",
+    )
+
 
 def test_agent_graph_routes_skill_training_and_keeps_context_until_level_up() -> None:
     llm = TestingLLMAdapter()

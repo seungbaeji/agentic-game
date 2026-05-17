@@ -3,6 +3,7 @@ from __future__ import annotations
 from agentic_game.application.ports import StorePort
 from agentic_game.domain.game_state import (
     InventoryState,
+    NpcMemory,
     PlayerState,
     QuestLog,
     SkillBook,
@@ -12,6 +13,7 @@ from agentic_game.domain.game_state import (
     apply_player_delta,
     discover_location,
     level_up_skill,
+    update_npc_memory,
     update_quest_progress,
 )
 
@@ -25,6 +27,8 @@ QUESTS_NAMESPACE = ("game", "quests")
 QUESTS_KEY = "latest"
 WORLD_NAMESPACE = ("game", "world")
 WORLD_KEY = "latest"
+NPCS_NAMESPACE = ("game", "npcs")
+NPCS_KEY = "latest"
 
 
 class GameStateRepository:
@@ -217,3 +221,43 @@ class GameStateRepository:
         )
         self.save_world(world)
         return world
+
+    def load_npcs(self) -> NpcMemory:
+        """Load NPC memory, returning empty memory when none exists."""
+        try:
+            value = self._store.get(
+                namespace=NPCS_NAMESPACE,
+                key=NPCS_KEY,
+            )
+        except KeyError:
+            return NpcMemory()
+
+        if isinstance(value, NpcMemory):
+            return value
+
+        return NpcMemory()
+
+    def save_npcs(self, npc_memory: NpcMemory) -> str:
+        """Persist NPC memory and return its store reference."""
+        return self._store.put(
+            namespace=NPCS_NAMESPACE,
+            key=NPCS_KEY,
+            value=npc_memory,
+        )
+
+    def update_npc(
+        self,
+        *,
+        npc_id: str,
+        relation_delta: int = 0,
+        memory: str | None = None,
+    ) -> NpcMemory:
+        """Update NPC relation/memory and persist NPC state."""
+        npc_memory = update_npc_memory(
+            self.load_npcs(),
+            npc_id=npc_id,
+            relation_delta=relation_delta,
+            memory=memory,
+        )
+        self.save_npcs(npc_memory)
+        return npc_memory

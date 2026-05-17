@@ -165,7 +165,7 @@ def make_dialogue_wrapper(store: StorePort):
     """Create the parent node that invokes and persists the dialogue subgraph."""
     return make_simple_subgraph_wrapper(
         store=store,
-        graph=build_dialogue_subgraph(),
+        graph=build_dialogue_subgraph(store),
         subgraph=SubgraphName.DIALOGUE,
         initial_phase=DialoguePhase.GREETING,
     )

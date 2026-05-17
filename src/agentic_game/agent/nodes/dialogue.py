@@ -7,6 +7,9 @@ from agentic_game.agent.nodes.scenario_nodes import (
     make_hitl_node,
 )
 from agentic_game.agent.state import DialogueState
+from agentic_game.application.game_state import GameStateRepository
+from agentic_game.application.ports import StorePort
+from agentic_game.application.usecases.dialogue import remember_dialogue_event
 from agentic_game.domain.dialogue import DialogueEvent, DialoguePhase
 from agentic_game.flow.dialogue import serialize_dialogue_actions
 from agentic_game.scenarios.definitions import DIALOGUE_SCENARIO
@@ -48,37 +51,54 @@ def dialogue_execute_node(state: DialogueState) -> DialogueState:
     }
 
 
-def dialogue_response_node(state: DialogueState) -> DialogueState:
-    """Return a deterministic NPC dialogue response."""
-    phase = state.get("phase")
-    event = state.get("event")
+def make_dialogue_response_node(store: StorePort):
+    """Create a node that stores deterministic NPC dialogue memory."""
 
-    if phase == DialoguePhase.REACT and event == DialogueEvent.ASK_RUMOR:
+    def dialogue_response_node(state: DialogueState) -> DialogueState:
+        """Return a deterministic NPC dialogue response."""
+        phase = state.get("phase")
+        event = state.get("event")
+
+        if phase == DialoguePhase.REACT and event == DialogueEvent.ASK_RUMOR:
+            remember_dialogue_event(
+                event=event,
+                game_state=GameStateRepository(store),
+            )
+            return {
+                "response": "NPC가 오래된 유적에 대한 소문을 들려줬습니다.",
+            }
+        if phase == DialoguePhase.REACT and event == DialogueEvent.ASK_TRADE:
+            remember_dialogue_event(
+                event=event,
+                game_state=GameStateRepository(store),
+            )
+            return {
+                "response": "NPC가 근처 상인을 소개해 줬습니다.",
+            }
+        if phase == DialoguePhase.REWARD:
+            remember_dialogue_event(
+                event=event,
+                game_state=GameStateRepository(store),
+            )
+            return {
+                "response": "NPC가 감사의 표시로 작은 보상을 준비했습니다.",
+            }
+        if phase == DialoguePhase.END:
+            return {
+                "response": "NPC와의 대화를 마쳤습니다.",
+            }
+
+        existing_response = state.get("response")
+        if existing_response:
+            return {
+                "response": existing_response,
+            }
+
         return {
-            "response": "NPC가 오래된 유적에 대한 소문을 들려줬습니다.",
-        }
-    if phase == DialoguePhase.REACT and event == DialogueEvent.ASK_TRADE:
-        return {
-            "response": "NPC가 근처 상인을 소개해 줬습니다.",
-        }
-    if phase == DialoguePhase.REWARD:
-        return {
-            "response": "NPC가 감사의 표시로 작은 보상을 준비했습니다.",
-        }
-    if phase == DialoguePhase.END:
-        return {
-            "response": "NPC와의 대화를 마쳤습니다.",
+            "response": "NPC와 대화를 이어갑니다.",
         }
 
-    existing_response = state.get("response")
-    if existing_response:
-        return {
-            "response": existing_response,
-        }
-
-    return {
-        "response": "NPC와 대화를 이어갑니다.",
-    }
+    return dialogue_response_node
 
 
 dialogue_ask_user_node = make_ask_user_node(

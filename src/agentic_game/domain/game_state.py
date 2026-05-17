@@ -51,6 +51,18 @@ class WorldState:
     discovered_locations: tuple[str, ...] = ()
 
 
+@dataclass(frozen=True, slots=True)
+class NpcState:
+    npc_id: str
+    relation: int = 0
+    memories: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class NpcMemory:
+    npcs: tuple[NpcState, ...] = ()
+
+
 def add_inventory_item(
     inventory: InventoryState,
     *,
@@ -179,6 +191,46 @@ def discover_location(
         current_location=location_id,
         discovered_locations=tuple(discovered),
     )
+
+
+def update_npc_memory(
+    npc_memory: NpcMemory,
+    *,
+    npc_id: str,
+    relation_delta: int = 0,
+    memory: str | None = None,
+) -> NpcMemory:
+    """Return NPC memory with relation and memory changes applied."""
+    updated_npcs: list[NpcState] = []
+    npc_found = False
+
+    for npc in npc_memory.npcs:
+        if npc.npc_id == npc_id:
+            memories = list(npc.memories)
+            if memory is not None and memory not in memories:
+                memories.append(memory)
+            updated_npcs.append(
+                NpcState(
+                    npc_id=npc.npc_id,
+                    relation=npc.relation + relation_delta,
+                    memories=tuple(memories),
+                )
+            )
+            npc_found = True
+        else:
+            updated_npcs.append(npc)
+
+    if not npc_found:
+        memories = (memory,) if memory is not None else ()
+        updated_npcs.append(
+            NpcState(
+                npc_id=npc_id,
+                relation=relation_delta,
+                memories=memories,
+            )
+        )
+
+    return NpcMemory(npcs=tuple(updated_npcs))
 
 
 def level_up_skill(

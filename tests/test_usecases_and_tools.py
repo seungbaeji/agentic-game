@@ -12,10 +12,12 @@ from agentic_game.application.usecases import (
     level_up_trained_skill,
     mark_quest_progress,
     practice_skill,
+    remember_dialogue_event,
     resolve_battle_action,
     resolve_battle_action_and_store_player,
 )
 from agentic_game.domain.battle import BattleOutcome
+from agentic_game.domain.dialogue import DialogueEvent
 from agentic_game.domain.exploration import ExplorationEvent
 from agentic_game.outbound.store import LangGraphStoreAdapter
 from agentic_game.tools import craft_item_tool, resolve_battle_tool
@@ -145,6 +147,29 @@ def test_exploration_usecase_updates_world_state() -> None:
     assert result.location_id == "forest_path"
     assert world.current_location == "forest_path"
     assert world.discovered_locations == ("forest_path",)
+
+
+def test_dialogue_usecase_updates_npc_memory() -> None:
+    store = LangGraphStoreAdapter(InMemoryStore())
+    game_state = GameStateRepository(store)
+
+    remember_dialogue_event(
+        event=DialogueEvent.ASK_RUMOR,
+        game_state=game_state,
+    )
+    remember_dialogue_event(
+        event=DialogueEvent.THANK,
+        game_state=game_state,
+    )
+
+    npc_memory = game_state.load_npcs()
+
+    assert npc_memory.npcs[0].npc_id == "village_elder"
+    assert npc_memory.npcs[0].relation == 1
+    assert npc_memory.npcs[0].memories == (
+        "old_ruins_rumor",
+        "received_thanks",
+    )
 
 
 def test_tool_schema_hides_injected_dependencies() -> None:
