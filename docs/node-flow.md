@@ -1,6 +1,6 @@
 # Flow-Centered Scenario Execution
 
-이 문서는 business flow가 scenario 실행을 어떻게 이끄는지 설명합니다.
+이 문서는 business flow가 scenario 실행을 어떻게 이끄는지 설명합니다. 현재 예시는 게임이지만, 목표는 같은 phase/event 패턴을 다른 업무 도메인에도 옮길 수 있는 runtime abstraction을 찾는 것입니다.
 
 프로젝트의 중심 전이는 하나입니다.
 
@@ -169,7 +169,7 @@ scenario wrapper는 subgraph를 실행한 뒤 parent response로 갑니다. ask 
 
 ## Scenario 실행 방식
 
-모든 게임 시나리오는 같은 `ScenarioNode` graph shape를 사용합니다. 다만 `EXECUTE` 단계에서 실제 tool을 쓰는지 여부는 아직 다릅니다.
+모든 샘플 시나리오는 같은 `ScenarioNode` graph shape를 사용합니다. 다만 `EXECUTE` 단계에서 실제 tool을 쓰는지 여부는 아직 다릅니다.
 
 | Scenario | Execute/Response 방식 | Store payload |
 | --- | --- | --- |
@@ -181,7 +181,7 @@ scenario wrapper는 subgraph를 실행한 뒤 parent response로 갑니다. ask 
 | dialogue | deterministic response 중심 | npc 저장 |
 | skill_training | deterministic execute node | skill book 저장 |
 
-따라서 현재 일반화된 핵심은 graph shape와 phase/event flow입니다. tool/usecase/payload persistence는 battle/craft/trade에 구현되어 있습니다. 이 시나리오들은 `ToolBinding`으로 event와 tool input을 연결합니다. battle은 전투 결과를 `game/player/latest`에 반영하고, craft는 성공한 제작 결과를 `game/inventory/latest`에 반영하며, trade는 player gold와 inventory를 갱신합니다. exploration은 `game/world/latest`에 위치 발견 상태를 저장하고, quest는 `game/quests/latest`와 player reward를 갱신합니다. dialogue는 `game/npcs/latest`에 NPC 관계와 기억을 저장하고, skill_training은 훈련/레벨업 결과를 `game/skills/latest`에 반영합니다.
+따라서 현재 일반화된 핵심은 graph shape와 phase/event flow입니다. tool/usecase/payload persistence는 battle/craft/trade에 구현되어 있습니다. 이 시나리오들은 `ToolBinding`으로 event와 tool input을 연결합니다. 샘플에서는 battle/craft/trade가 game state를 갱신하지만, 추출 대상 라이브러리 관점에서는 state-changing workflow의 실행 결과와 도메인 상태를 분리해서 저장하는 패턴을 검증합니다.
 
 ## Battle Subgraph
 
@@ -383,7 +383,7 @@ battle / resolve / raw / history / 1
 ...
 ```
 
-게임 상태 저장 형태:
+샘플 도메인 상태 저장 형태:
 
 ```text
 game / player / latest
@@ -584,7 +584,7 @@ craft / result / raw / history / 1
 ...
 ```
 
-게임 상태 저장 형태:
+샘플 도메인 상태 저장 형태:
 
 ```text
 game / inventory / latest
@@ -628,7 +628,7 @@ trade / exchange / raw / history / 1
 ...
 ```
 
-게임 상태 저장 형태:
+샘플 도메인 상태 저장 형태:
 
 ```text
 game / player / latest
@@ -693,7 +693,7 @@ runtime state
   <scenario> / <phase> / <payload> / latest
   <scenario> / <phase> / <payload> / history / <version>
 
-game state
+domain state sample
   game / player / latest
   game / inventory / latest
   game / npcs / latest
@@ -790,7 +790,7 @@ CLI는 provider-specific exception을 알 필요가 없습니다.
 
 테스트는 계층별로 나뉩니다.
 
-- domain: 순수 게임 판정
+- domain: 순수 도메인 판정
 - flow: phase/event transition table
 - scenarios: intent inference와 ScenarioSpec
 - agent transitions: parent graph edge table

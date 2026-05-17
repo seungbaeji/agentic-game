@@ -1,13 +1,16 @@
 # agentic-game
 
-LangGraph 기반 게임 시나리오 에이전트입니다.
+LangGraph와 LangChain 위에서 사용할 phase/event 기반 agent workflow runtime을 실험하는 프로젝트입니다.
 
-이 프로젝트는 phase/event 기반 게임 시나리오를 LangGraph로 실행하는 구조를 검증합니다. 도메인 규칙, 업무 flow, 시나리오 정의, 실행 engine, LangGraph agent 조립, inbound/outbound adapter를 분리해서 새 게임 도메인을 추가해도 runtime 구조를 크게 바꾸지 않도록 만드는 것이 목표입니다.
+게임은 최종 목적이 아니라 샘플 도메인입니다. battle, craft, trade 같은 게임 시나리오를 통해 여러 업무 도메인에 추출 가능한 패턴을 찾고, 장기적으로는 LangChain/LangGraph와 함께 쓰는 재사용 가능한 workflow 라이브러리로 분리하는 것이 목표입니다.
+
+해결하려는 문제는 LLM agent를 순수 tool-calling loop로 만들면 너무 자유롭고, LangGraph를 직접 쓰면 node, edge, wrapper, persistence, HITL, tool 실행 코드가 도메인마다 반복된다는 점입니다. 이 프로젝트는 그 사이에 있는 spec-driven runtime 계층을 검증합니다.
 
 ## 문서
 
 - [아키텍처](docs/architecture.md): 폴더 구조, 역할/책임/경계, 의존성 방향, 확장 지점
 - [Flow 중심 Scenario 실행](docs/node-flow.md): parent graph, scenario flow, 공통 graph 실행 방식
+- [Tool Calling 비교](docs/tool-calling-comparison.md): MCP/tool-calling 패턴과 현재 hybrid runtime 비교
 
 MkDocs로 문서를 볼 수 있습니다.
 
@@ -19,7 +22,7 @@ uv run --group docs agentic-game-docs serve
 
 ```text
 src/agentic_game/
-  domain/       # 게임 데이터, phase/event enum, 순수 도메인 규칙
+  domain/       # 샘플 도메인 데이터, phase/event enum, 순수 도메인 규칙
   flow/         # phase/event transition과 flow helper
   scenarios/    # ScenarioSpec 정의, scenario intent, parent routing, graph 등록
   engine/       # subgraph 실행, persistence wrapper, tool runner
@@ -34,7 +37,7 @@ src/agentic_game/
 
 ## 현재 Scenario와 Tool 지원 상태
 
-현재 7개 게임 시나리오가 같은 `ScenarioNode` graph shape를 사용합니다.
+현재 7개 게임 샘플 시나리오가 같은 `ScenarioNode` graph shape를 사용합니다.
 
 | Scenario | 실행 방식 | 실제 LangChain tool |
 | --- | --- | --- |
@@ -46,17 +49,17 @@ src/agentic_game/
 | dialogue | deterministic response 중심 + npc 저장 | 없음 |
 | skill_training | deterministic execute node + skill 저장 | 없음 |
 
-즉 일반화된 부분은 `phase/event -> flow -> ScenarioNode -> 공통 LangGraph shape`입니다. battle, craft, trade는 `ToolBinding`을 통해 event와 LangChain tool input을 연결하고 raw/llm/ui payload를 store에 저장합니다. battle은 `game/player/latest`에 HP/EXP를 저장하고, craft는 `game/inventory/latest`에 제작 아이템을 저장하며, trade는 player gold와 inventory를 갱신합니다. exploration은 `game/world/latest`에 위치 발견 상태를 저장하고, quest는 `game/quests/latest`와 player reward를 갱신합니다. dialogue는 `game/npcs/latest`에 NPC 관계와 기억을 저장하고, skill_training은 `game/skills/latest`에 스킬 성장 상태를 저장합니다.
+즉 일반화된 부분은 `phase/event -> flow -> ScenarioNode -> 공통 LangGraph shape`입니다. battle, craft, trade는 `ToolBinding`을 통해 event와 LangChain tool input을 연결하고 raw/llm/ui payload를 store에 저장합니다. 샘플에서는 battle이 `game/player/latest`에 HP/EXP를 저장하고, craft가 `game/inventory/latest`에 제작 아이템을 저장하며, trade가 player gold와 inventory를 갱신합니다. 다른 업무 도메인에서는 이 위치가 승인 상태, 문서 처리 결과, 티켓 상태, 고객 응대 기록 같은 도메인 상태가 됩니다.
 
 `ActionCard`는 decision prompt에 전달되는 행동 후보입니다. tool-backed action의 `tool_name`, `state_effect`, `risk` metadata는 `ToolBinding`에서 파생됩니다. LLM은 이 정보를 참고해 event를 고르지만 tool을 직접 실행하지 않습니다. runtime이 flow 전이를 검증한 뒤 `ToolBinding`으로 tool input을 만들고 실행합니다.
 
-battle과 craft는 LLM narration도 지원합니다. 전투/제작 결과와 game state 반영은 deterministic usecase가 확정하고, LLM은 확정된 결과를 바탕으로 사용자 응답 문장만 변주합니다. LLM narration을 만들 수 없으면 기존 deterministic summary를 그대로 사용합니다.
+battle과 craft는 LLM narration도 지원합니다. 상태 변경은 deterministic usecase가 확정하고, LLM은 확정된 결과를 바탕으로 사용자 응답 문장만 변주합니다. 이는 다른 도메인에서 “상태 변경은 runtime이 통제하고, 표현/요약/설명은 LLM이 맡는” 패턴을 검증하기 위한 예시입니다.
 
 ## Flow 중심 실행 요약
 
 이 프로젝트는 “업무 흐름”을 중심에 두고, LangGraph는 그 흐름을 실행하는 공통 껍데기로 둡니다.
 
-전투를 예로 들면, `공격한다`는 업무 event이고 `전투 결과를 계산해야 한다`는 다음 업무 phase입니다. graph는 scenario마다 새로 설계하지 않고, `ScenarioNode`라는 공통 실행 단계를 사용합니다.
+전투를 예로 들면, `공격한다`는 업무 event이고 `전투 결과를 계산해야 한다`는 다음 업무 phase입니다. 문서 처리 도메인이라면 `업로드한다 -> 분류해야 한다`, 승인 도메인이라면 `제출한다 -> 리뷰해야 한다`로 바뀔 수 있습니다. graph는 scenario마다 새로 설계하지 않고, `ScenarioNode`라는 공통 실행 단계를 사용합니다.
 
 ```text
 사용자 입력
@@ -80,7 +83,7 @@ battle과 craft는 LLM narration도 지원합니다. 전투/제작 결과와 gam
 각 파일의 책임은 다음과 같습니다.
 
 - `flow/`: 업무 규칙을 정의합니다. `PREPARE + ATTACK -> RESOLVE`처럼 phase/event 전이를 다루며 LangGraph node를 모릅니다.
-- `scenarios/`: 어떤 게임 시나리오가 있는지, 사용자 입력을 scenario/event로 어떻게 해석하는지, parent graph에 어떤 scenario를 등록하는지 설명합니다.
+- `scenarios/`: 어떤 도메인 scenario가 있는지, 사용자 입력을 scenario/event로 어떻게 해석하는지, parent graph에 어떤 scenario를 등록하는지 설명합니다.
 - `engine/`: subgraph 실행, state persistence, tool 실행처럼 scenario를 실제로 돌리는 공통 실행기를 둡니다.
 - `agent/transitions.py`: parent graph edge table입니다. scenario subgraph의 node shape는 `agent/graph/scenario_graph.py`의 공통 graph를 사용합니다.
 - `agent/graph/`: `StateGraph`를 만들고 node와 edge table을 조립합니다. node 내부 로직은 알지 않습니다.
@@ -91,7 +94,7 @@ battle과 craft는 LLM narration도 지원합니다. 전투/제작 결과와 gam
 ```text
 scenarios/
   spec.py          # 공통 ScenarioSpec / ScenarioNode
-  definitions.py   # 각 게임 시나리오의 ScenarioSpec 정의
+  definitions.py   # 각 샘플 시나리오의 ScenarioSpec 정의
   registry.py      # parent graph에 concrete scenario 연결
   router.py        # parent-level intent routing
   battle.py        # battle 내부 event intent

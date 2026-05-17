@@ -1,13 +1,14 @@
 # agentic-game
 
-`agentic-game`은 LangGraph 기반 게임 시나리오 에이전트입니다.
+`agentic-game`은 LangGraph와 LangChain 위에서 사용할 phase/event 기반 agent workflow runtime을 게임 샘플로 검증하는 프로젝트입니다.
 
-이 문서는 코드 구조를 빠르게 파악하고, business flow가 공통 scenario graph를 어떻게 이끄는지 이해하기 위한 가이드입니다.
+게임은 최종 목적이 아니라 샘플 도메인입니다. 이 문서는 코드 구조를 빠르게 파악하고, business flow가 공통 scenario graph를 어떻게 이끄는지, 그리고 이 패턴을 다른 업무 도메인으로 어떻게 추출할 수 있는지 이해하기 위한 가이드입니다.
 
 ## 문서 구성
 
 - [Architecture](architecture.md): 폴더 구조, 역할/책임/경계, 의존성 방향, 확장 지점
 - [Flow-Centered Scenario Execution](node-flow.md): parent graph, scenario flow, 공통 graph 실행 방식
+- [Tool Calling Architecture Comparison](tool-calling-comparison.md): MCP/tool-calling 패턴과 현재 hybrid runtime 비교
 
 ## 핵심 구조
 
@@ -28,7 +29,7 @@ src/agentic_game/
 
 ## 현재 범위
 
-7개 게임 시나리오가 공통 scenario graph shape를 사용합니다.
+7개 게임 샘플 시나리오가 공통 scenario graph shape를 사용합니다.
 
 | Scenario | 실행 방식 |
 | --- | --- |
@@ -40,9 +41,9 @@ src/agentic_game/
 | dialogue | deterministic response 중심 + npc 저장 |
 | skill_training | deterministic execute node + skill 저장 |
 
-현재 실제 `@tool` 계층과 raw/llm/ui payload 저장은 battle/craft/trade에 있습니다. 이 시나리오들은 `ToolBinding`으로 event와 tool input을 연결합니다. battle은 `game/player/latest`에 HP/EXP를 반영하고, craft는 성공한 제작 결과를 `game/inventory/latest`에도 반영하며, trade는 player gold와 inventory를 갱신합니다. exploration은 `game/world/latest`에 위치 발견 상태를 반영하고, quest는 `game/quests/latest`와 player reward를 갱신합니다. dialogue는 `game/npcs/latest`에 NPC 관계와 기억을 반영하고, skill_training은 `game/skills/latest`에 스킬 성장 상태를 반영합니다.
+현재 실제 `@tool` 계층과 raw/llm/ui payload 저장은 battle/craft/trade에 있습니다. 이 시나리오들은 `ToolBinding`으로 event와 tool input을 연결합니다. 샘플에서는 player, inventory, quest, world 같은 game state를 저장하지만, 라이브러리로 추출할 때는 문서 처리 상태, 승인 상태, 고객지원 티켓, 운영 변경 요청 같은 도메인 상태로 바뀔 수 있습니다.
 
-LLM 다양성은 battle/craft에 적용되어 있습니다. 상태 변경은 usecase가 확정하고, LLM은 확정된 결과의 응답 문장만 변주합니다.
+LLM 다양성은 battle/craft에 적용되어 있습니다. 상태 변경은 usecase가 확정하고, LLM은 확정된 결과의 응답 문장만 변주합니다. 이는 state-changing workflow에서 LLM 자유도와 deterministic runtime control을 분리하기 위한 예시입니다.
 
 ## 실행
 
