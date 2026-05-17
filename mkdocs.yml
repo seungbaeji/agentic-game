@@ -13,11 +13,15 @@ theme:
 
 nav:
   - Home: index.md
-  - Glossary: glossary.md
-  - Architecture: architecture.md
-  - Runtime Flow: node-flow.md
-  - Scenario Details: scenario-details.md
-  - Tool Calling Comparison: tool-calling-comparison.md
+  - Getting Started:
+      - LLM, Tool, Flow Guide: llm-tool-flow-guide.md
+      - Glossary: glossary.md
+  - Design:
+      - Runtime Flow: node-flow.md
+      - Architecture: architecture.md
+  - Reference:
+      - Scenario Details: scenario-details.md
+      - Tool Calling Comparison: tool-calling-comparison.md
 
 markdown_extensions:
   - admonition
