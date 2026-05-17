@@ -4,7 +4,7 @@ from typing import Annotated, Any
 
 from langchain_core.tools import InjectedToolArg, tool
 
-from agentic_game.tools.projections import battle_result_to_tool_result
+from agentic_game.tools.result_projection import battle_result_to_tool_result
 from agentic_game.tools.types import ToolResult
 
 

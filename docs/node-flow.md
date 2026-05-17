@@ -369,7 +369,7 @@ runtime 처리 순서:
 2. hydrated `resolve_battle_tool`을 invoke한다.
 3. tool이 application usecase `resolve_battle_action_and_store_player`를 호출한다.
 4. usecase가 결과에 따라 `GameStateRepository`로 player HP/EXP를 갱신한다.
-5. tool result를 raw/llm/ui payload로 projection한다.
+5. tool result를 raw/llm/ui payload로 변환한다.
 6. store에 payload를 저장한다.
 7. `latest_refs`, `history_refs`, `response`, `next_node`를 반환한다.
 
@@ -570,7 +570,7 @@ runtime 처리 순서:
 2. hydrated `craft_item_tool`을 invoke한다.
 3. tool이 application usecase `craft_item_and_store_reward`를 호출한다.
 4. 제작 성공이면 `GameStateRepository`가 inventory에 item을 추가한다.
-5. tool result를 raw/llm/ui payload로 projection한다.
+5. tool result를 raw/llm/ui payload로 변환한다.
 6. store에 payload를 저장한다.
 7. response와 refs를 반환한다.
 
