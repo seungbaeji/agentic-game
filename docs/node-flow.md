@@ -2,7 +2,7 @@
 
 이 문서는 공통 실행 흐름만 설명합니다.
 
-용어가 낯설다면 [Glossary](glossary.md)를 먼저 봐도 됩니다. 구체 scenario별 동작은 [Scenario Details](scenario-details.md)를 참고하세요. 폴더 구조와 계층 책임은 [Architecture](architecture.md)를 참고하세요.
+용어가 낯설다면 [Glossary](glossary.md)를 먼저 봐도 됩니다. state 경계가 헷갈린다면 [State Model](state-model.md)을 먼저 읽으세요. 구체 scenario별 동작은 [Scenario Details](scenario-details.md)를 참고하세요. 폴더 구조와 계층 책임은 [Architecture](architecture.md)를 참고하세요.
 
 ## 핵심 원칙
 
@@ -139,6 +139,8 @@ event
 LLM은 action metadata를 참고해 event를 고를 수 있지만 tool을 직접 실행하지 않습니다. runtime이 flow 전이를 검증한 뒤 `ToolBinding`으로 tool input을 만들고 실행합니다.
 
 ## State Persistence
+
+pure/stateless/stateful, workflow state, domain state, runtime-only state의 구분은 [State Model](state-model.md)을 기준으로 합니다. 이 섹션은 runtime에서 실제로 무엇을 언제 저장하는지만 설명합니다.
 
 subgraph wrapper는 scenario state를 store에 저장합니다.
 
