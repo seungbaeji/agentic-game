@@ -7,18 +7,15 @@ from agentic_game.domain.exploration import ExplorationEvent, ExplorationPhase
 from agentic_game.domain.quest import QuestEvent, QuestPhase
 from agentic_game.domain.skill_training import SkillTrainingEvent, SkillTrainingPhase
 from agentic_game.domain.trade import TradeEvent, TradePhase
-from agentic_game.flow.intent import (
-    infer_battle_event,
-    infer_craft_event,
-    infer_dialogue_event,
-    infer_exploration_event,
-    infer_parent_subgraph,
-    infer_quest_event,
-    infer_skill_training_event,
-    infer_trade_event,
-    is_capability_question,
-)
 from agentic_game.flow.models import SubgraphName
+from agentic_game.scenarios.battle import infer_battle_event
+from agentic_game.scenarios.craft import infer_craft_event
+from agentic_game.scenarios.dialogue import infer_dialogue_event
+from agentic_game.scenarios.exploration import infer_exploration_event
+from agentic_game.scenarios.quest import infer_quest_event
+from agentic_game.scenarios.router import infer_parent_subgraph, is_capability_question
+from agentic_game.scenarios.skill_training import infer_skill_training_event
+from agentic_game.scenarios.trade import infer_trade_event
 
 
 def test_infer_battle_event_from_direct_prepare_input() -> None:

@@ -9,7 +9,7 @@ from agentic_game.agent.prompts import (
 from agentic_game.agent.state import ParentState
 from agentic_game.agent.types import AvailableSubgraphs, ResponseText
 from agentic_game.application.ports import LLMPort
-from agentic_game.flow.intent import infer_parent_subgraph, is_capability_question
+from agentic_game.scenarios.router import infer_parent_subgraph, is_capability_question
 
 
 def make_parent_decision_node(llm: LLMPort):
