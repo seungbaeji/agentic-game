@@ -7,6 +7,9 @@ from agentic_game.agent.nodes.scenario_nodes import (
     make_hitl_node,
 )
 from agentic_game.agent.state import TradeState
+from agentic_game.application.game_state import GameStateRepository
+from agentic_game.application.ports import StorePort
+from agentic_game.application.usecases.trade import exchange_item
 from agentic_game.domain.trade import TradeEvent, TradePhase
 from agentic_game.flow.trade import serialize_trade_actions
 from agentic_game.scenarios.definitions import TRADE_SCENARIO
@@ -41,12 +44,21 @@ trade_hitl_node = make_hitl_node(
 )
 
 
-def trade_execute_node(state: TradeState) -> TradeState:
-    """Resolve a lightweight item exchange."""
-    return {
-        "response": "거래가 성사되었습니다. 아이템과 재화를 교환했습니다.",
-        "next_node": ScenarioNode.RESPONSE,
-    }
+def make_trade_execute_node(store: StorePort):
+    """Create a node that stores a lightweight item exchange."""
+
+    def trade_execute_node(state: TradeState) -> TradeState:
+        """Resolve a lightweight item exchange."""
+        result = exchange_item(game_state=GameStateRepository(store))
+        return {
+            "response": (
+                f"거래가 성사되었습니다. {result.item_id}을 구매하고 "
+                f"{result.price} gold를 지불했습니다."
+            ),
+            "next_node": ScenarioNode.RESPONSE,
+        }
+
+    return trade_execute_node
 
 
 def trade_response_node(state: TradeState) -> TradeState:

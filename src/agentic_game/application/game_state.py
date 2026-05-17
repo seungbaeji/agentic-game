@@ -51,12 +51,14 @@ class GameStateRepository:
         *,
         hp_change: int = 0,
         exp_gain: int = 0,
+        gold_change: int = 0,
     ) -> PlayerState:
-        """Apply player HP/EXP changes and persist the updated player."""
+        """Apply player HP/EXP/gold changes and persist the updated player."""
         player = apply_player_delta(
             self.load_player(),
             hp_change=hp_change,
             exp_gain=exp_gain,
+            gold_change=gold_change,
         )
         self.save_player(player)
         return player

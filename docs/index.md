@@ -36,11 +36,11 @@ src/agentic_game/
 | craft | LangChain tool + usecase + inventory 저장 |
 | exploration | deterministic execute node |
 | quest | deterministic execute node |
-| trade | deterministic execute node |
+| trade | deterministic execute node + player/inventory 저장 |
 | dialogue | deterministic response 중심 |
 | skill_training | deterministic execute node + skill 저장 |
 
-현재 실제 `@tool` 계층과 raw/llm/ui payload 저장은 battle/craft에만 있습니다. battle은 `game/player/latest`에 HP/EXP를 반영하고, craft는 성공한 제작 결과를 `game/inventory/latest`에도 반영하고, skill_training은 `game/skills/latest`에 스킬 성장 상태를 반영합니다. 나머지 시나리오는 flow 일반화와 graph shape 검증을 위한 lightweight 구현입니다.
+현재 실제 `@tool` 계층과 raw/llm/ui payload 저장은 battle/craft에만 있습니다. battle은 `game/player/latest`에 HP/EXP를 반영하고, craft는 성공한 제작 결과를 `game/inventory/latest`에도 반영합니다. trade는 player gold와 inventory를 갱신하고, skill_training은 `game/skills/latest`에 스킬 성장 상태를 반영합니다. 나머지 시나리오는 flow 일반화와 graph shape 검증을 위한 lightweight 구현입니다.
 
 ## 실행
 

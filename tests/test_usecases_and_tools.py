@@ -6,6 +6,7 @@ from agentic_game.application.game_state import GameStateRepository
 from agentic_game.application.usecases import (
     craft_item,
     craft_item_and_store_reward,
+    exchange_item,
     level_up_trained_skill,
     practice_skill,
     resolve_battle_action,
@@ -90,6 +91,22 @@ def test_skill_training_usecases_update_skill_book() -> None:
     assert level_up_result.skill_book.skills[0].level == 2
     assert skill_book.skills[0].level == 2
     assert skill_book.skills[0].exp == 0
+
+
+def test_trade_exchange_item_updates_player_gold_and_inventory() -> None:
+    store = LangGraphStoreAdapter(InMemoryStore())
+    game_state = GameStateRepository(store)
+
+    result = exchange_item(game_state=game_state)
+
+    player = game_state.load_player()
+    inventory = game_state.load_inventory()
+
+    assert result.item_id == "travel_ration"
+    assert result.price == 15
+    assert player.gold == 85
+    assert inventory.items[0].item_id == "travel_ration"
+    assert inventory.items[0].quantity == 1
 
 
 def test_tool_schema_hides_injected_dependencies() -> None:

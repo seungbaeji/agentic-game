@@ -7,10 +7,12 @@ from agentic_game.application.usecases.skill_training import (
     level_up_trained_skill,
     practice_skill,
 )
+from agentic_game.application.usecases.trade import exchange_item
 
 __all__ = [
     "craft_item",
     "craft_item_and_store_reward",
+    "exchange_item",
     "level_up_trained_skill",
     "practice_skill",
     "resolve_battle_action",

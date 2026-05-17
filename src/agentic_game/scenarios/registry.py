@@ -145,7 +145,7 @@ def make_trade_wrapper(store: StorePort):
     """Create the parent node that invokes and persists the trade subgraph."""
     return make_simple_subgraph_wrapper(
         store=store,
-        graph=build_trade_subgraph(),
+        graph=build_trade_subgraph(store),
         subgraph=SubgraphName.TRADE,
         initial_phase=TradePhase.BROWSE,
     )

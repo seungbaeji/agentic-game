@@ -18,6 +18,7 @@ class InventoryState:
 class PlayerState:
     hp: int = 100
     exp: int = 0
+    gold: int = 100
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,11 +69,13 @@ def apply_player_delta(
     *,
     hp_change: int = 0,
     exp_gain: int = 0,
+    gold_change: int = 0,
 ) -> PlayerState:
-    """Return player state after applying bounded HP and EXP changes."""
+    """Return player state after applying bounded HP, EXP, and gold changes."""
     return PlayerState(
         hp=max(0, player.hp + hp_change),
         exp=max(0, player.exp + exp_gain),
+        gold=max(0, player.gold + gold_change),
     )
 
 
