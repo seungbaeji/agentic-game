@@ -88,11 +88,65 @@ phase_to_node
 
 `ScenarioSpec`은 “이 scenario는 어떤 phase/event flow를 가지고 있고, 각 phase가 어떤 실행 단계로 이어지는가”를 설명합니다.
 
+### Terminal Phase
+
+scenario가 끝났다고 볼 수 있는 phase입니다.
+
+예:
+
+```text
+DialoguePhase.END
+CraftPhase.COMPLETE
+TradePhase.CANCELLED
+```
+
+Terminal phase에 도달하면 parent graph는 `current_subgraph`를 비워 다음 사용자 입력을 새 scenario 선택으로 처리할 수 있습니다.
+
+### Scenario Switch
+
+현재 scenario가 진행 중이어도 사용자가 다른 scenario를 명시적으로 요청하는 경우입니다.
+
+예:
+
+```text
+대화 중에 "그만하고 탐험할래"
+제작 중에 "전투하자"
+```
+
+Scenario switch는 terminal phase가 아닙니다. 기존 scenario state는 store에 남고, active session만 새 scenario로 이동합니다.
+
+### Pause
+
+현재 scenario를 끝내지 않고 잠시 도움말이나 capability 안내를 보는 경우입니다.
+
+예:
+
+```text
+대화 중에 "메뉴 보여줘"
+탐험 중에 "뭘 할 수 있어?"
+```
+
+Pause는 `current_subgraph`를 유지해야 합니다. 안내가 끝난 뒤 다음 입력은 원래 scenario로 이어져야 합니다.
+
+### Continue
+
+명시적인 scenario switch나 pause가 없을 때 active scenario session을 이어가는 동작입니다.
+
+예:
+
+```text
+대화하고 싶어
+소문을 묻자
+자세히 말해줘
+```
+
+두 번째, 세 번째 입력은 매번 새 scenario를 고르는 것이 아니라 dialogue session 안에서 처리됩니다.
+
 ## Graph Runtime Terms
 
 ### Parent Graph
 
-사용자 입력을 보고 어떤 scenario subgraph로 보낼지 결정하는 최상위 graph입니다.
+사용자 입력을 보고 어떤 scenario subgraph로 보낼지 결정하는 최상위 graph입니다. 이미 진행 중인 scenario가 있으면 그 session을 이어갈 수도 있습니다.
 
 예:
 
@@ -176,6 +230,7 @@ Wrapper의 책임은 다음과 같습니다.
 - subgraph invoke
 - runtime-only key 제거
 - scenario state persistence
+- terminal phase 기준 current scenario 유지/해제
 - parent state update 반환
 
 Wrapper는 업무 규칙을 판단하지 않아야 합니다.

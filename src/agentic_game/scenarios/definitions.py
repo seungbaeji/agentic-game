@@ -27,6 +27,7 @@ BATTLE_SCENARIO = ScenarioSpec[BattlePhase, BattleEvent](
         BattlePhase.RESOLVE: ScenarioNode.EXECUTE,
         BattlePhase.COMPLETE: ScenarioNode.RESPONSE,
     },
+    terminal_phases=(BattlePhase.COMPLETE,),
 )
 
 CRAFT_SCENARIO = ScenarioSpec[CraftPhase, CraftEvent](
@@ -38,6 +39,7 @@ CRAFT_SCENARIO = ScenarioSpec[CraftPhase, CraftEvent](
         CraftPhase.RESULT: ScenarioNode.EXECUTE,
         CraftPhase.COMPLETE: ScenarioNode.RESPONSE,
     },
+    terminal_phases=(CraftPhase.COMPLETE,),
 )
 
 EXPLORATION_SCENARIO = ScenarioSpec[ExplorationPhase, ExplorationEvent](
@@ -50,6 +52,7 @@ EXPLORATION_SCENARIO = ScenarioSpec[ExplorationPhase, ExplorationEvent](
         ExplorationPhase.DISCOVER: ScenarioNode.RESPONSE,
         ExplorationPhase.COMPLETE: ScenarioNode.RESPONSE,
     },
+    terminal_phases=(ExplorationPhase.COMPLETE,),
 )
 
 QUEST_SCENARIO = ScenarioSpec[QuestPhase, QuestEvent](
@@ -63,6 +66,7 @@ QUEST_SCENARIO = ScenarioSpec[QuestPhase, QuestEvent](
         QuestPhase.COMPLETE: ScenarioNode.RESPONSE,
         QuestPhase.FAILED: ScenarioNode.RESPONSE,
     },
+    terminal_phases=(QuestPhase.COMPLETE, QuestPhase.FAILED),
 )
 
 TRADE_SCENARIO = ScenarioSpec[TradePhase, TradeEvent](
@@ -76,6 +80,7 @@ TRADE_SCENARIO = ScenarioSpec[TradePhase, TradeEvent](
         TradePhase.COMPLETE: ScenarioNode.RESPONSE,
         TradePhase.CANCELLED: ScenarioNode.RESPONSE,
     },
+    terminal_phases=(TradePhase.COMPLETE, TradePhase.CANCELLED),
 )
 
 DIALOGUE_SCENARIO = ScenarioSpec[DialoguePhase, DialogueEvent](
@@ -88,6 +93,7 @@ DIALOGUE_SCENARIO = ScenarioSpec[DialoguePhase, DialogueEvent](
         DialoguePhase.REWARD: ScenarioNode.RESPONSE,
         DialoguePhase.END: ScenarioNode.RESPONSE,
     },
+    terminal_phases=(DialoguePhase.END,),
 )
 
 SKILL_TRAINING_SCENARIO = ScenarioSpec[SkillTrainingPhase, SkillTrainingEvent](
@@ -100,4 +106,5 @@ SKILL_TRAINING_SCENARIO = ScenarioSpec[SkillTrainingPhase, SkillTrainingEvent](
         SkillTrainingPhase.LEVEL_UP: ScenarioNode.RESPONSE,
         SkillTrainingPhase.COMPLETE: ScenarioNode.RESPONSE,
     },
+    terminal_phases=(SkillTrainingPhase.COMPLETE,),
 )

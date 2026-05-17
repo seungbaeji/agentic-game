@@ -52,10 +52,28 @@ ParentNode.ASK_USER
 처리 순서:
 
 1. `detect_parent_subgraph(user_input)`로 명시적인 scenario 의도를 먼저 찾습니다.
-2. capability question이면 가능한 scenario를 안내합니다.
-3. 그래도 모호하면 LLM `ParentDecision`으로 target scenario를 고릅니다.
-4. scenario wrapper가 subgraph를 실행합니다.
-5. parent response가 subgraph response를 사용자에게 돌려줍니다.
+2. capability question이나 help 요청이면 가능한 scenario를 안내하되 active session은 유지합니다.
+3. 현재 진행 중인 `current_subgraph`가 있으면 같은 scenario session을 이어갑니다.
+4. 그래도 모호하면 LLM `ParentDecision`으로 target scenario를 고릅니다.
+5. scenario wrapper가 subgraph를 실행합니다.
+6. parent response가 subgraph response를 사용자에게 돌려줍니다.
+
+이 순서 덕분에 `대화하고 싶어` 이후 `자세히 말해줘` 같은 입력이 parent capability 안내로 빠지지 않고 dialogue scenario 안에서 처리됩니다.
+
+명시적 scenario switch는 active session보다 우선합니다.
+
+```text
+대화 중 "그만하고 탐험할래"
+  -> dialogue를 계속하지 않고 exploration으로 이동
+```
+
+help/pause 입력은 active session을 끝내지 않습니다.
+
+```text
+대화 중 "메뉴 보여줘"
+  -> capability 안내
+  -> current_subgraph=dialogue 유지
+```
 
 시작 안내와 capability 응답은 LLM이 생성할 수 있고, LLM 응답이 비어 있거나 실패하면 deterministic fallback을 사용합니다.
 
@@ -148,6 +166,8 @@ graph state에는 latest/history ref만 남깁니다.
     },
 }
 ```
+
+Wrapper는 scenario lifecycle도 관리합니다. subgraph 결과 phase가 `ScenarioSpec.terminal_phases`에 포함되면 `current_subgraph`를 비워 다음 입력을 새 scenario 선택으로 처리합니다. terminal phase가 아니면 같은 scenario를 계속 active session으로 유지합니다.
 
 ## Runtime-Only Keys
 

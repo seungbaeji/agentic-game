@@ -128,7 +128,17 @@ def is_capability_question(user_text: str) -> bool:
     normalized_text = user_text.lower()
     return any(
         keyword in normalized_text
-        for keyword in ("할 수", "뭐 할", "무엇을", "어떤걸", "what can", "capabil")
+        for keyword in (
+            "할 수",
+            "뭐 할",
+            "무엇을",
+            "어떤걸",
+            "메뉴",
+            "도움",
+            "help",
+            "what can",
+            "capabil",
+        )
     )
 
 
@@ -257,7 +267,7 @@ def detect_dialogue_event(
         DialogueEvent.ASK_RUMOR: ("rumor", "소문"),
         DialogueEvent.ASK_TRADE: ("trade", "거래"),
         DialogueEvent.THANK: ("thank", "감사", "고마"),
-        DialogueEvent.LEAVE: ("leave", "떠날", "종료", "그만"),
+        DialogueEvent.LEAVE: ("leave", "떠날", "떠나", "종료", "그만"),
         DialogueEvent.CLAIM_REWARD: ("reward", "보상", "받을"),
     }
     return _detect_event(event_by_keywords, available_events, user_text)

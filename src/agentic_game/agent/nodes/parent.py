@@ -35,6 +35,14 @@ def make_parent_decision_node(llm: LLMPort):
                 "next_node": ParentNode.ASK_USER,
             }
 
+        current_subgraph = state.get("current_subgraph")
+        if current_subgraph is not None:
+            return {
+                "target_subgraph": current_subgraph,
+                "reason": "현재 scenario session을 이어갑니다.",
+                "next_node": SUBGRAPH_REGISTRY[current_subgraph].node,
+            }
+
         decision = llm.structured_output(
             ParentDecision,
             build_parent_decision_prompt(
@@ -144,6 +152,7 @@ def make_parent_ask_user_node(llm: LLMPort):
             response = ""
 
         return {
+            "current_subgraph": state.get("current_subgraph"),
             "response": response or describe_available_work(),
         }
 

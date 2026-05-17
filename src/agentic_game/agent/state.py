@@ -49,7 +49,7 @@ from agentic_game.scenarios.spec import ScenarioNode
 class ParentState(TypedDict, total=False):
     user_input: UserInput
     target_subgraph: SubgraphName
-    current_subgraph: SubgraphName
+    current_subgraph: SubgraphName | None
     store_refs: StoreRefs
     response: ResponseText
     reason: ReasonText

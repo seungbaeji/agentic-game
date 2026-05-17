@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from agentic_game.agent.models import SubgraphName
 from agentic_game.agent.nodes.parent import generate_cli_startup_message
 from agentic_game.bootstrap import build_agent_graph, get_container
 from agentic_game.errors import AgenticGameError
@@ -21,6 +22,7 @@ def main() -> None:
 
     graph = build_agent_graph(container)
     store_refs: dict[str, str] = {}
+    current_subgraph: SubgraphName | None = None
 
     print(
         generate_cli_startup_message(
@@ -48,6 +50,7 @@ def main() -> None:
                 {
                     "user_input": user_input,
                     "store_refs": store_refs,
+                    "current_subgraph": current_subgraph,
                 }
             )
         except AgenticGameError as exc:
@@ -55,4 +58,5 @@ def main() -> None:
             continue
 
         store_refs = result.get("store_refs", store_refs)
+        current_subgraph = result.get("current_subgraph", current_subgraph)
         print(result.get("response", ""))

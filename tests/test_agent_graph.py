@@ -8,6 +8,7 @@ from agentic_game.agent.nodes.parent import (
 from agentic_game.application.content_generation import BattleNarration, CraftNarration
 from agentic_game.bootstrap import build_agent_graph, build_container
 from agentic_game.config.settings import Settings
+from agentic_game.flow.models import SubgraphName
 from agentic_game.outbound.llm.testing import TestingLLMAdapter
 from tests.fakes import FixedRandom
 
@@ -553,6 +554,152 @@ def test_agent_graph_answers_dialogue_followup_without_advancing_flow() -> None:
     assert saved_state["phase"] == "react"
     assert saved_state["event"] == "ask_rumor"
     assert saved_state["input_intent"] == "question"
+
+
+def test_agent_graph_continues_active_dialogue_for_ambiguous_input() -> None:
+    llm = TestingLLMAdapter(
+        structured_outputs={
+            DialogueDecision: [
+                {
+                    "intent": "question",
+                    "response": "그 소문은 북쪽 유적의 푸른 빛과 종소리에 관한 이야기입니다.",
+                    "reason": "현재 대화 맥락의 후속 질문입니다.",
+                }
+            ],
+        }
+    )
+    container = build_container(
+        settings=Settings(_env_file=None),
+        llm=llm,
+        random=FixedRandom(d20=[]),
+    )
+    graph = build_agent_graph(container)
+
+    first = graph.invoke(
+        {
+            "user_input": "대화하고 싶어",
+            "store_refs": {},
+        }
+    )
+    second = graph.invoke(
+        {
+            "user_input": "소문을 묻자",
+            "store_refs": first["store_refs"],
+            "current_subgraph": first["current_subgraph"],
+        }
+    )
+    third = graph.invoke(
+        {
+            "user_input": "자세히 말해줘",
+            "store_refs": second["store_refs"],
+            "current_subgraph": second["current_subgraph"],
+        }
+    )
+
+    assert second["current_subgraph"] == SubgraphName.DIALOGUE
+    assert third["current_subgraph"] == SubgraphName.DIALOGUE
+    assert third["response"] == "그 소문은 북쪽 유적의 푸른 빛과 종소리에 관한 이야기입니다."
+
+
+def test_agent_graph_clears_current_subgraph_when_dialogue_ends() -> None:
+    llm = TestingLLMAdapter()
+    container = build_container(
+        settings=Settings(_env_file=None),
+        llm=llm,
+        random=FixedRandom(d20=[]),
+    )
+    graph = build_agent_graph(container)
+
+    first = graph.invoke(
+        {
+            "user_input": "대화하고 싶어",
+            "store_refs": {},
+        }
+    )
+    second = graph.invoke(
+        {
+            "user_input": "소문을 묻자",
+            "store_refs": first["store_refs"],
+            "current_subgraph": first["current_subgraph"],
+        }
+    )
+    third = graph.invoke(
+        {
+            "user_input": "떠나기",
+            "store_refs": second["store_refs"],
+            "current_subgraph": second["current_subgraph"],
+        }
+    )
+
+    assert third["response"] == "NPC와의 대화를 마쳤습니다."
+    assert third["current_subgraph"] is None
+
+
+def test_agent_graph_preserves_active_scenario_during_help_pause() -> None:
+    llm = TestingLLMAdapter()
+    container = build_container(
+        settings=Settings(_env_file=None),
+        llm=llm,
+        random=FixedRandom(d20=[]),
+    )
+    graph = build_agent_graph(container)
+
+    first = graph.invoke(
+        {
+            "user_input": "대화하고 싶어",
+            "store_refs": {},
+        }
+    )
+    help_result = graph.invoke(
+        {
+            "user_input": "메뉴 보여줘",
+            "store_refs": first["store_refs"],
+            "current_subgraph": first["current_subgraph"],
+        }
+    )
+    resumed = graph.invoke(
+        {
+            "user_input": "소문을 묻자",
+            "store_refs": help_result["store_refs"],
+            "current_subgraph": help_result["current_subgraph"],
+        }
+    )
+
+    assert help_result["current_subgraph"] == SubgraphName.DIALOGUE
+    assert "전투" in help_result["response"]
+    assert resumed["current_subgraph"] == SubgraphName.DIALOGUE
+    assert resumed["response"] == (
+        "NPC는 북쪽의 오래된 유적에서 밤마다 푸른 빛이 새어 나오고, "
+        "가끔 낮은 종소리가 들린다는 소문을 들려줬습니다."
+    )
+
+
+def test_agent_graph_switches_from_active_scenario_on_explicit_new_scenario() -> None:
+    llm = TestingLLMAdapter()
+    container = build_container(
+        settings=Settings(_env_file=None),
+        llm=llm,
+        random=FixedRandom(d20=[]),
+    )
+    graph = build_agent_graph(container)
+
+    first = graph.invoke(
+        {
+            "user_input": "대화하고 싶어",
+            "store_refs": {},
+        }
+    )
+    switched = graph.invoke(
+        {
+            "user_input": "그만하고 탐험할래",
+            "store_refs": first["store_refs"],
+            "current_subgraph": first["current_subgraph"],
+        }
+    )
+
+    assert switched["current_subgraph"] == SubgraphName.EXPLORATION
+    assert switched["response"] == "탐험 행동을 선택해 주세요. 가능한 선택: 숲길 / 유적 / 조사 / 후퇴"
+    assert "exploration_state" in switched["store_refs"]
 
 
 def test_agent_graph_routes_skill_training_and_keeps_context_until_level_up() -> None:

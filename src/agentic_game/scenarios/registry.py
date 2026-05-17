@@ -27,6 +27,15 @@ from agentic_game.domain.trade import TradePhase
 from agentic_game.engine.subgraph import make_simple_subgraph_wrapper, make_subgraph_wrapper
 from agentic_game.engine.tool_runner import ToolInvoker
 from agentic_game.flow.craft import answer_craft_result_question
+from agentic_game.scenarios.definitions import (
+    BATTLE_SCENARIO,
+    CRAFT_SCENARIO,
+    DIALOGUE_SCENARIO,
+    EXPLORATION_SCENARIO,
+    QUEST_SCENARIO,
+    SKILL_TRAINING_SCENARIO,
+    TRADE_SCENARIO,
+)
 
 
 def load_latest_craft_result(
@@ -76,6 +85,7 @@ def make_battle_wrapper(
             "latest_refs": {},
             "history_refs": {},
         },
+        terminal_phases=BATTLE_SCENARIO.terminal_phases,
     )
 
 
@@ -127,6 +137,7 @@ def make_craft_wrapper(
             "latest_refs": {},
             "history_refs": {},
         },
+        terminal_phases=CRAFT_SCENARIO.terminal_phases,
         before_invoke=answer_followup,
     )
 
@@ -138,6 +149,7 @@ def make_exploration_wrapper(store: StorePort):
         graph=build_exploration_subgraph(store),
         subgraph=SubgraphName.EXPLORATION,
         initial_phase=ExplorationPhase.START,
+        terminal_phases=EXPLORATION_SCENARIO.terminal_phases,
     )
 
 
@@ -151,6 +163,7 @@ def make_trade_wrapper(
         graph=build_trade_subgraph(store, exchange_item_tool),
         subgraph=SubgraphName.TRADE,
         initial_phase=TradePhase.BROWSE,
+        terminal_phases=TRADE_SCENARIO.terminal_phases,
     )
 
 
@@ -161,6 +174,7 @@ def make_quest_wrapper(store: StorePort):
         graph=build_quest_subgraph(store),
         subgraph=SubgraphName.QUEST,
         initial_phase=QuestPhase.AVAILABLE,
+        terminal_phases=QUEST_SCENARIO.terminal_phases,
     )
 
 
@@ -171,6 +185,7 @@ def make_dialogue_wrapper(store: StorePort, llm: LLMPort):
         graph=build_dialogue_subgraph(store, llm),
         subgraph=SubgraphName.DIALOGUE,
         initial_phase=DialoguePhase.GREETING,
+        terminal_phases=DIALOGUE_SCENARIO.terminal_phases,
     )
 
 
@@ -181,4 +196,5 @@ def make_skill_training_wrapper(store: StorePort):
         graph=build_skill_training_subgraph(store),
         subgraph=SubgraphName.SKILL_TRAINING,
         initial_phase=SkillTrainingPhase.SELECT_SKILL,
+        terminal_phases=SKILL_TRAINING_SCENARIO.terminal_phases,
     )
