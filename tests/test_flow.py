@@ -160,6 +160,11 @@ def test_trade_flow_exposes_confirm_actions() -> None:
         TradeEvent.DECLINE_PRICE.value,
         TradeEvent.CANCEL.value,
     }
+    accept = next(
+        action for action in actions if action["event"] == TradeEvent.ACCEPT_PRICE
+    )
+    assert accept["tool_name"] == "exchange_item_tool"
+    assert accept["risk"] == "state_change"
 
 
 def test_trade_flow_resolves_exchange_path() -> None:

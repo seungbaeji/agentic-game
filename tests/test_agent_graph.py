@@ -292,10 +292,14 @@ def test_agent_graph_routes_trade_and_keeps_context_until_exchange() -> None:
     saved_state = container.store.get(namespace=("trade", "state"), key="latest")
     assert saved_state["phase"] == "exchange"
     assert saved_state["event"] == "accept_price"
+    assert saved_state["latest_refs"]["exchange.raw"] == "store://trade/exchange/raw/latest"
     assert "next_node" not in saved_state
 
+    trade_raw = container.store.get(namespace=("trade", "exchange", "raw"), key="latest")
     player = container.store.get(namespace=("game", "player"), key="latest")
     inventory = container.store.get(namespace=("game", "inventory"), key="latest")
+    assert trade_raw["item_id"] == "travel_ration"
+    assert trade_raw["price"] == 15
     assert player.gold == 85
     assert inventory.items[0].item_id == "travel_ration"
     assert inventory.items[0].quantity == 1

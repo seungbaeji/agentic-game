@@ -1,7 +1,12 @@
 from __future__ import annotations
 
 from agentic_game.domain.trade import TradeEvent, TradePhase
-from agentic_game.flow.models import AvailableActions, TransitionRule
+from agentic_game.flow.models import (
+    AvailableActions,
+    ToolBinding,
+    TransitionRule,
+    tool_action_metadata,
+)
 from agentic_game.flow.transitions import resolve_transition, serialize_actions
 
 type TradeTransitionRule = TransitionRule[TradePhase, TradeEvent]
@@ -60,9 +65,26 @@ TRADE_TRANSITIONS: list[TradeTransitionRule] = [
 ]
 
 
+TRADE_TOOL_BINDINGS: dict[TradeEvent, ToolBinding[TradeEvent]] = {
+    TradeEvent.ACCEPT_PRICE: ToolBinding(
+        event=TradeEvent.ACCEPT_PRICE,
+        tool_name="exchange_item_tool",
+        tool_input={
+            "item_id": "travel_ration",
+            "price": 15,
+        },
+        state_effect="player gold decreases and travel_ration is added to inventory.",
+    ),
+}
+
+
 def serialize_trade_actions(phase: TradePhase) -> AvailableActions:
     """Return user-facing trade actions available in the current phase."""
-    return serialize_actions(TRADE_TRANSITIONS, phase)
+    return serialize_actions(
+        TRADE_TRANSITIONS,
+        phase,
+        metadata_by_event=tool_action_metadata(TRADE_TOOL_BINDINGS),
+    )
 
 
 def resolve_trade_transition(

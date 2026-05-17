@@ -42,11 +42,13 @@ src/agentic_game/
 | craft | usecase-backed tool 실행 + inventory 저장 | `craft_item_tool(recipe)` |
 | exploration | deterministic execute node + world 저장 | 없음 |
 | quest | deterministic execute/response node + quest/player 저장 | 없음 |
-| trade | deterministic execute node + player/inventory 저장 | 없음 |
+| trade | usecase-backed tool 실행 + player/inventory 저장 | `exchange_item_tool(item_id, price)` |
 | dialogue | deterministic response 중심 + npc 저장 | 없음 |
 | skill_training | deterministic execute node + skill 저장 | 없음 |
 
-즉 일반화된 부분은 `phase/event -> flow -> ScenarioNode -> 공통 LangGraph shape`입니다. 아직 모든 시나리오가 tool/usecase까지 일반화된 것은 아닙니다. 현재 실제 LangChain `@tool`과 payload persistence는 battle/craft에만 있습니다. battle은 `game/player/latest`에 HP/EXP를 저장하고, craft는 `game/inventory/latest`에 제작 아이템을 저장합니다. exploration은 `game/world/latest`에 위치 발견 상태를 저장하고, trade는 player gold와 inventory를 갱신하고, quest는 `game/quests/latest`와 player reward를 갱신합니다. dialogue는 `game/npcs/latest`에 NPC 관계와 기억을 저장하고, skill_training은 `game/skills/latest`에 스킬 성장 상태를 저장합니다.
+즉 일반화된 부분은 `phase/event -> flow -> ScenarioNode -> 공통 LangGraph shape`입니다. battle, craft, trade는 `ToolBinding`을 통해 event와 LangChain tool input을 연결하고 raw/llm/ui payload를 store에 저장합니다. battle은 `game/player/latest`에 HP/EXP를 저장하고, craft는 `game/inventory/latest`에 제작 아이템을 저장하며, trade는 player gold와 inventory를 갱신합니다. exploration은 `game/world/latest`에 위치 발견 상태를 저장하고, quest는 `game/quests/latest`와 player reward를 갱신합니다. dialogue는 `game/npcs/latest`에 NPC 관계와 기억을 저장하고, skill_training은 `game/skills/latest`에 스킬 성장 상태를 저장합니다.
+
+`ActionCard`는 decision prompt에 전달되는 행동 후보입니다. tool-backed action의 `tool_name`, `state_effect`, `risk` metadata는 `ToolBinding`에서 파생됩니다. LLM은 이 정보를 참고해 event를 고르지만 tool을 직접 실행하지 않습니다. runtime이 flow 전이를 검증한 뒤 `ToolBinding`으로 tool input을 만들고 실행합니다.
 
 battle과 craft는 LLM narration도 지원합니다. 전투/제작 결과와 game state 반영은 deterministic usecase가 확정하고, LLM은 확정된 결과를 바탕으로 사용자 응답 문장만 변주합니다. LLM narration을 만들 수 없으면 기존 deterministic summary를 그대로 사용합니다.
 
@@ -117,7 +119,7 @@ scenarios/
    RESOLVE phase는 실제 전투 결과를 계산해야 하므로 ScenarioNode.EXECUTE로 보냅니다.
 
 5. execute tool
-   battle은 tool runner를 통해 usecase를 실행하고 raw/llm/ui 결과를 store에 저장합니다.
+   tool-backed scenario는 tool runner를 통해 usecase를 실행하고 raw/llm/ui 결과를 store에 저장합니다.
 
 6. response
    저장된 실행 결과를 사용자에게 보여줄 응답으로 반환합니다.

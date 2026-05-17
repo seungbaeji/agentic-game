@@ -15,7 +15,7 @@ from agentic_game.config import Settings, get_settings
 from agentic_game.outbound.llm import create_llm_adapter
 from agentic_game.outbound.random import RandomAdapter
 from agentic_game.outbound.store import LangGraphStoreAdapter
-from agentic_game.tools import craft_item_tool, resolve_battle_tool
+from agentic_game.tools import craft_item_tool, exchange_item_tool, resolve_battle_tool
 
 
 @dataclass(frozen=True)
@@ -57,6 +57,7 @@ def build_agent_graph(container: AppContainer):
         container.llm,
         resolve_battle_tool,
         craft_item_tool,
+        exchange_item_tool,
         resolve_battle_action_and_store_player,
         craft_item_and_store_reward,
         container.random,

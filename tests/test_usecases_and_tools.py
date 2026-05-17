@@ -20,7 +20,7 @@ from agentic_game.domain.battle import BattleOutcome
 from agentic_game.domain.dialogue import DialogueEvent
 from agentic_game.domain.exploration import ExplorationEvent
 from agentic_game.outbound.store import LangGraphStoreAdapter
-from agentic_game.tools import craft_item_tool, resolve_battle_tool
+from agentic_game.tools import craft_item_tool, exchange_item_tool, resolve_battle_tool
 from agentic_game.tools.types import ToolResult
 from tests.fakes import FixedRandom
 
@@ -175,6 +175,10 @@ def test_dialogue_usecase_updates_npc_memory() -> None:
 def test_tool_schema_hides_injected_dependencies() -> None:
     assert resolve_battle_tool.args == {"action": {"title": "Action", "type": "string"}}
     assert craft_item_tool.args == {"recipe": {"title": "Recipe", "type": "string"}}
+    assert exchange_item_tool.args == {
+        "item_id": {"title": "Item Id", "type": "string"},
+        "price": {"title": "Price", "type": "integer"},
+    }
 
 
 def test_resolve_battle_tool_returns_internal_dataclass() -> None:
@@ -211,3 +215,21 @@ def test_craft_item_tool_returns_internal_dataclass() -> None:
     assert result.raw["item_name"] == "healing_potion"
     assert result.raw["inventory_delta"] is None
     assert result.metadata["system_event"] == "tool.craft.completed"
+
+
+def test_exchange_item_tool_returns_internal_dataclass() -> None:
+    store = LangGraphStoreAdapter(InMemoryStore())
+    result = exchange_item_tool.invoke(
+        {
+            "item_id": "travel_ration",
+            "price": 15,
+            "exchange_item": exchange_item,
+            "game_state": GameStateRepository(store),
+        }
+    )
+
+    assert isinstance(result, ToolResult)
+    assert result.raw["item_id"] == "travel_ration"
+    assert result.raw["price"] == 15
+    assert result.raw["player_gold"] == 85
+    assert result.metadata["system_event"] == "tool.trade.exchange.completed"

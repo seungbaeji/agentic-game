@@ -29,7 +29,6 @@ from agentic_game.scenarios.registry import (
 
 SIMPLE_PARENT_WRAPPERS = {
     ParentNode.EXPLORATION: make_exploration_wrapper,
-    ParentNode.TRADE: make_trade_wrapper,
     ParentNode.QUEST: make_quest_wrapper,
     ParentNode.DIALOGUE: make_dialogue_wrapper,
     ParentNode.SKILL_TRAINING: make_skill_training_wrapper,
@@ -41,6 +40,7 @@ def build_parent_graph(
     llm: LLMPort,
     resolve_battle_tool: ToolInvoker,
     craft_item_tool: ToolInvoker,
+    exchange_item_tool: ToolInvoker,
     resolve_battle_action: Callable[..., BattleActionResult],
     craft_item: Callable[..., CraftItemResult],
     random: RandomPort,
@@ -67,6 +67,13 @@ def build_parent_graph(
             craft_item_tool,
             craft_item,
             random,
+        ),
+    )
+    builder.add_node(
+        ParentNode.TRADE,
+        make_trade_wrapper(
+            store,
+            exchange_item_tool,
         ),
     )
     for node, make_wrapper in SIMPLE_PARENT_WRAPPERS.items():

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from agentic_game.application.usecases.battle import BattleActionResult
 from agentic_game.application.usecases.craft import CraftItemResult
+from agentic_game.application.usecases.trade import TradeResult
 from agentic_game.tools.types import ToolResult
 
 
@@ -71,5 +72,40 @@ def craft_result_to_tool_result(result: CraftItemResult) -> ToolResult:
         },
         metadata={
             "system_event": "tool.craft.completed",
+        },
+    )
+
+
+def trade_result_to_tool_result(result: TradeResult) -> ToolResult:
+    """Project a trade usecase result into raw, LLM, UI, and metadata payloads."""
+    raw = {
+        "item_id": result.item_id,
+        "price": result.price,
+        "player_gold": result.player.gold,
+        "inventory_items": [
+            {
+                "item_id": item.item_id,
+                "quantity": item.quantity,
+            }
+            for item in result.inventory.items
+        ],
+    }
+
+    return ToolResult(
+        raw=raw,
+        llm={
+            "summary": (
+                f"거래가 성사되었습니다. {result.item_id}을 구매하고 "
+                f"{result.price} gold를 지불했습니다."
+            ),
+            "item_id": result.item_id,
+            "price": result.price,
+        },
+        ui={
+            "type": "trade_result",
+            **raw,
+        },
+        metadata={
+            "system_event": "tool.trade.exchange.completed",
         },
     )

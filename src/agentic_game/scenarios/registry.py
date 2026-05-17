@@ -141,11 +141,14 @@ def make_exploration_wrapper(store: StorePort):
     )
 
 
-def make_trade_wrapper(store: StorePort):
+def make_trade_wrapper(
+    store: StorePort,
+    exchange_item_tool: ToolInvoker,
+):
     """Create the parent node that invokes and persists the trade subgraph."""
     return make_simple_subgraph_wrapper(
         store=store,
-        graph=build_trade_subgraph(store),
+        graph=build_trade_subgraph(store, exchange_item_tool),
         subgraph=SubgraphName.TRADE,
         initial_phase=TradePhase.BROWSE,
     )

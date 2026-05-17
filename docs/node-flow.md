@@ -8,7 +8,7 @@
 
 LangGraph subgraph는 scenario마다 새로 설계하지 않고 공통 `ScenarioNode` shape를 사용합니다. `BattlePhase.ACTION`으로 이동한다는 것은 업무 상태가 행동 선택 단계가 됐다는 뜻이고, `ScenarioSpec.phase_to_node`가 이 phase를 `ScenarioNode.HITL` 같은 공통 실행 단계로 바꿉니다.
 
-사용자가 선택할 수 있는 행동 후보는 `ActionCard`로 직렬화됩니다. `ActionCard`는 event, label, description을 기본으로 갖고, tool-backed action은 tool name, state effect, risk metadata를 추가로 가질 수 있습니다. LLM은 이 metadata를 참고해 event를 선택하지만 tool을 직접 실행하지는 않습니다.
+사용자가 선택할 수 있는 행동 후보는 `ActionCard`로 직렬화됩니다. `ActionCard`는 event, label, description을 기본으로 갖고, tool-backed action은 tool name, state effect, risk metadata를 추가로 가질 수 있습니다. 이 metadata는 `ToolBinding`에서 파생됩니다. LLM은 이 metadata를 참고해 event를 선택하지만 tool을 직접 실행하지는 않습니다.
 
 ## 전체 실행 흐름
 
@@ -175,13 +175,13 @@ scenario wrapper는 subgraph를 실행한 뒤 parent response로 갑니다. ask 
 | --- | --- | --- |
 | battle | `engine/tool_runner.py` -> `resolve_battle_tool` -> `resolve_battle_action_and_store_player` | raw/llm/ui 저장 + player 저장 |
 | craft | `engine/tool_runner.py` -> `craft_item_tool` -> `craft_item_and_store_reward` | raw/llm/ui 저장 + inventory 저장 |
+| trade | `engine/tool_runner.py` -> `exchange_item_tool` -> `exchange_item` | raw/llm/ui 저장 + player/inventory 저장 |
 | exploration | deterministic execute node | world 저장 |
 | quest | deterministic execute/response node | quest/player 저장 |
-| trade | deterministic execute node | player/inventory 저장 |
 | dialogue | deterministic response 중심 | npc 저장 |
 | skill_training | deterministic execute node | skill book 저장 |
 
-따라서 현재 일반화된 핵심은 graph shape와 phase/event flow입니다. tool/usecase/payload persistence는 battle/craft에만 구현되어 있습니다. battle은 전투 결과를 `game/player/latest`에 반영하고, craft는 성공한 제작 결과를 `game/inventory/latest`에 반영합니다. exploration은 `game/world/latest`에 위치 발견 상태를 저장하고, trade는 player gold와 inventory를 갱신하고, quest는 `game/quests/latest`와 player reward를 갱신합니다. dialogue는 `game/npcs/latest`에 NPC 관계와 기억을 저장하고, skill_training은 훈련/레벨업 결과를 `game/skills/latest`에 반영합니다.
+따라서 현재 일반화된 핵심은 graph shape와 phase/event flow입니다. tool/usecase/payload persistence는 battle/craft/trade에 구현되어 있습니다. 이 시나리오들은 `ToolBinding`으로 event와 tool input을 연결합니다. battle은 전투 결과를 `game/player/latest`에 반영하고, craft는 성공한 제작 결과를 `game/inventory/latest`에 반영하며, trade는 player gold와 inventory를 갱신합니다. exploration은 `game/world/latest`에 위치 발견 상태를 저장하고, quest는 `game/quests/latest`와 player reward를 갱신합니다. dialogue는 `game/npcs/latest`에 NPC 관계와 기억을 저장하고, skill_training은 훈련/레벨업 결과를 `game/skills/latest`에 반영합니다.
 
 ## Battle Subgraph
 
@@ -365,7 +365,7 @@ human input이 있으면 다시 decision으로 보냅니다.
 
 runtime 처리 순서:
 
-1. `BattleEvent`를 tool action 문자열로 변환한다.
+1. `BattleEvent`에 연결된 `ToolBinding`을 찾는다.
 2. hydrated `resolve_battle_tool`을 invoke한다.
 3. tool이 application usecase `resolve_battle_action_and_store_player`를 호출한다.
 4. usecase가 결과에 따라 `GameStateRepository`로 player HP/EXP를 갱신한다.
@@ -566,7 +566,7 @@ recipe가 있으면:
 
 runtime 처리 순서:
 
-1. `CraftEvent`를 recipe 문자열로 변환한다.
+1. `CraftEvent`에 연결된 `ToolBinding`을 찾는다.
 2. hydrated `craft_item_tool`을 invoke한다.
 3. tool이 application usecase `craft_item_and_store_reward`를 호출한다.
 4. 제작 성공이면 `GameStateRepository`가 inventory에 item을 추가한다.
@@ -604,14 +604,44 @@ craft tool result
 
 LLM narration은 응답 문장만 바꿉니다. `inventory_delta`, `item_name`, `success` 같은 상태 변경 값은 tool/usecase 결과를 그대로 사용합니다.
 
+## Trade Execute Node
+
+trade는 battle/craft와 같은 tool runner 경로를 사용합니다.
+
+```text
+TradeEvent.ACCEPT_PRICE
+  -> TRADE_TOOL_BINDINGS
+  -> exchange_item_tool(item_id, price)
+  -> exchange_item
+  -> GameStateRepository.apply_player_delta
+  -> GameStateRepository.add_item
+  -> raw/llm/ui payload 저장
+```
+
+저장 namespace:
+
+```text
+trade / exchange / raw / latest
+trade / exchange / llm / latest
+trade / exchange / ui / latest
+trade / exchange / raw / history / 1
+...
+```
+
+게임 상태 저장 형태:
+
+```text
+game / player / latest
+game / inventory / latest
+```
+
 ## Lightweight Scenario Execute Nodes
 
-exploration, quest, trade, dialogue, skill_training은 현재 tool runner를 거치지 않습니다. 각 scenario node 파일에서 deterministic response를 반환합니다. 이 중 exploration은 world state를 갱신하고, trade는 `GameStateRepository`를 통해 player gold와 inventory를 갱신하고, quest는 quest log/player reward를 갱신하고, dialogue는 NPC memory를 갱신하고, skill_training은 skill book도 갱신합니다.
+exploration, quest, dialogue, skill_training은 현재 tool runner를 거치지 않습니다. 각 scenario node 파일에서 deterministic response를 반환합니다. 이 중 exploration은 world state를 갱신하고, quest는 quest log/player reward를 갱신하고, dialogue는 NPC memory를 갱신하고, skill_training은 skill book도 갱신합니다.
 
 ```text
 agent/nodes/exploration.py      -> exploration_execute_node
 agent/nodes/quest.py            -> quest_execute_node
-agent/nodes/trade.py            -> trade_execute_node
 agent/nodes/dialogue.py         -> dialogue_execute_node / dialogue_response_node
 agent/nodes/skill_training.py   -> skill_training_execute_node
 ```
@@ -626,7 +656,7 @@ domain phase/event
   -> deterministic response
 ```
 
-이 시나리오들을 battle/craft처럼 실제 시스템 기능으로 키우려면 application usecase, `tools/<scenario>.py`, `engine/tool_runner.py` binding, bootstrap dependency injection을 추가하면 됩니다.
+이 시나리오들을 battle/craft/trade처럼 tool-backed 기능으로 키우려면 application usecase, `tools/<scenario>.py`, `flow/<scenario>.py`의 `ToolBinding`, `engine/tool_runner.py` 연결, bootstrap dependency injection을 추가하면 됩니다.
 
 ### Craft Follow-up Handling
 
