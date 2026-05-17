@@ -48,7 +48,7 @@ src/agentic_game/
 
 즉 일반화된 부분은 `phase/event -> flow -> ScenarioNode -> 공통 LangGraph shape`입니다. 아직 모든 시나리오가 tool/usecase까지 일반화된 것은 아닙니다. 현재 실제 LangChain `@tool`과 payload persistence는 battle/craft에만 있습니다. battle은 `game/player/latest`에 HP/EXP를 저장하고, craft는 `game/inventory/latest`에 제작 아이템을 저장합니다. exploration은 `game/world/latest`에 위치 발견 상태를 저장하고, trade는 player gold와 inventory를 갱신하고, quest는 `game/quests/latest`와 player reward를 갱신합니다. dialogue는 `game/npcs/latest`에 NPC 관계와 기억을 저장하고, skill_training은 `game/skills/latest`에 스킬 성장 상태를 저장합니다.
 
-craft는 LLM narration도 지원합니다. 제작 성공/실패와 inventory 반영은 deterministic usecase가 확정하고, LLM은 확정된 결과를 바탕으로 사용자 응답 문장만 변주합니다. LLM narration을 만들 수 없으면 기존 deterministic summary를 그대로 사용합니다.
+battle과 craft는 LLM narration도 지원합니다. 전투/제작 결과와 game state 반영은 deterministic usecase가 확정하고, LLM은 확정된 결과를 바탕으로 사용자 응답 문장만 변주합니다. LLM narration을 만들 수 없으면 기존 deterministic summary를 그대로 사용합니다.
 
 ## Flow 중심 실행 요약
 

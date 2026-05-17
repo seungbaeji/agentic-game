@@ -34,6 +34,7 @@ def build_battle_subgraph(
         return battle_execute_tool_node(
             state,
             store=store,
+            llm=llm,
             resolve_battle_tool=resolve_battle_tool,
             resolve_battle_action=resolve_battle_action,
             random=random,

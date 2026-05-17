@@ -42,7 +42,7 @@ src/agentic_game/
 
 현재 실제 `@tool` 계층과 raw/llm/ui payload 저장은 battle/craft에만 있습니다. battle은 `game/player/latest`에 HP/EXP를 반영하고, craft는 성공한 제작 결과를 `game/inventory/latest`에도 반영합니다. exploration은 `game/world/latest`에 위치 발견 상태를 반영하고, trade는 player gold와 inventory를 갱신하고, quest는 `game/quests/latest`와 player reward를 갱신합니다. dialogue는 `game/npcs/latest`에 NPC 관계와 기억을 반영하고, skill_training은 `game/skills/latest`에 스킬 성장 상태를 반영합니다.
 
-LLM 다양성은 craft부터 적용되어 있습니다. 상태 변경은 usecase가 확정하고, LLM은 확정된 craft 결과의 응답 문장만 변주합니다.
+LLM 다양성은 battle/craft에 적용되어 있습니다. 상태 변경은 usecase가 확정하고, LLM은 확정된 결과의 응답 문장만 변주합니다.
 
 ## 실행
 

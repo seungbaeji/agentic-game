@@ -177,17 +177,17 @@ game/world/latest     -> WorldState
 
 `StorePort`는 낮은 수준의 put/get만 제공하고, player, inventory, NPC memory, quest log, skill book, world state를 어떻게 읽고 갱신할지는 `GameStateRepository`가 담당합니다.
 
-`content_generation.py`는 LLM을 이용한 표현 변주를 담당합니다. 현재는 craft 결과 narration만 제공합니다.
+`content_generation.py`는 LLM을 이용한 표현 변주를 담당합니다. 현재는 battle/craft 결과 narration을 제공합니다.
 
 ```text
-craft deterministic result
-  -> inventory 저장
+battle/craft deterministic result
+  -> game state 저장
   -> raw/llm/ui payload 저장
   -> optional LLM narration
   -> user response
 ```
 
-LLM은 `CraftNarration` structured output으로 응답 문장만 생성합니다. item, success, quantity 같은 상태 변경 값은 이미 usecase에서 확정된 값을 사용하고 LLM 결과로 바꾸지 않습니다.
+LLM은 `BattleNarration`, `CraftNarration` structured output으로 응답 문장만 생성합니다. damage, item, success, quantity 같은 상태 변경 값은 이미 usecase에서 확정된 값을 사용하고 LLM 결과로 바꾸지 않습니다.
 
 ### tools
 

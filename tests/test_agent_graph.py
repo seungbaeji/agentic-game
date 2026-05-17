@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from agentic_game.application.content_generation import CraftNarration
+from agentic_game.application.content_generation import BattleNarration, CraftNarration
 from agentic_game.bootstrap import build_agent_graph, build_container
 from agentic_game.config.settings import Settings
 from agentic_game.outbound.llm.testing import TestingLLMAdapter
@@ -34,6 +34,41 @@ def test_agent_graph_hydrates_flat_tools_for_battle_flow() -> None:
     player = container.store.get(namespace=("game", "player"), key="latest")
     assert player.hp == 100
     assert player.exp == 20
+
+
+def test_agent_graph_uses_llm_battle_narration_without_changing_state() -> None:
+    llm = TestingLLMAdapter(
+        structured_outputs={
+            BattleNarration: [
+                {"response": "검격이 정확히 들어가며 적이 크게 휘청였습니다."}
+            ],
+        }
+    )
+    container = build_container(
+        settings=Settings(_env_file=None),
+        llm=llm,
+        random=FixedRandom(d20=[18], damage=[10]),
+    )
+    graph = build_agent_graph(container)
+
+    result = graph.invoke(
+        {
+            "user_input": "몬스터를 공격할게",
+            "store_refs": {},
+        }
+    )
+
+    assert result["response"] == "검격이 정확히 들어가며 적이 크게 휘청였습니다."
+
+    player = container.store.get(namespace=("game", "player"), key="latest")
+    battle_raw = container.store.get(namespace=("battle", "resolve", "raw"), key="latest")
+    assert player.hp == 100
+    assert player.exp == 20
+    assert battle_raw["outcome"] == "critical_hit"
+    assert battle_raw["player_delta"] == {
+        "hp_change": 0,
+        "exp_gain": 20,
+    }
 
 
 def test_agent_graph_describes_capabilities_without_internal_reason() -> None:

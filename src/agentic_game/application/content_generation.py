@@ -12,6 +12,24 @@ class CraftNarration(BaseModel):
     response: str = Field(description="User-facing craft result narration.")
 
 
+class BattleNarration(BaseModel):
+    response: str = Field(description="User-facing battle result narration.")
+
+
+def build_battle_narration_prompt(
+    *,
+    raw: Mapping[str, Any],
+    llm_payload: Mapping[str, Any],
+) -> str:
+    """Build a prompt for battle result flavor text."""
+    return (
+        "전투 결과를 한국어 한 문장으로 자연스럽게 변주해 주세요.\n"
+        "게임 상태 변경은 이미 확정되어 있으므로 피해량, 결과, HP/EXP 변화를 바꾸지 마세요.\n"
+        f"raw={dict(raw)}\n"
+        f"summary={llm_payload.get('summary', '')}"
+    )
+
+
 def build_craft_narration_prompt(
     *,
     raw: Mapping[str, Any],
@@ -24,6 +42,24 @@ def build_craft_narration_prompt(
         f"raw={dict(raw)}\n"
         f"summary={llm_payload.get('summary', '')}"
     )
+
+
+def generate_battle_narration(
+    *,
+    llm: LLMPort,
+    raw: Mapping[str, Any],
+    llm_payload: Mapping[str, Any],
+) -> str | None:
+    """Generate optional battle narration, falling back to deterministic summary."""
+    try:
+        narration = llm.structured_output(
+            BattleNarration,
+            build_battle_narration_prompt(raw=raw, llm_payload=llm_payload),
+        )
+    except Exception:
+        return None
+
+    return narration.response.strip() or None
 
 
 def generate_craft_narration(

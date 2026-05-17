@@ -389,6 +389,18 @@ game / player / latest
 
 현재 attack hit/critical hit은 EXP를 올리고, guard broken/failed escape는 HP를 낮춥니다.
 
+battle 응답은 선택적으로 LLM narration을 사용합니다.
+
+```text
+battle tool result
+  -> deterministic summary
+  -> BattleNarration structured output 시도
+  -> 성공하면 narration을 response로 사용
+  -> 실패하면 deterministic summary 사용
+```
+
+LLM narration은 응답 문장만 바꿉니다. `player_delta`, `damage`, `outcome` 같은 상태 변경 값은 tool/usecase 결과를 그대로 사용합니다.
+
 graph state에는 store ref만 남깁니다.
 
 ```python

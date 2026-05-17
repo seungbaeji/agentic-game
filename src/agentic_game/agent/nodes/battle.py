@@ -9,6 +9,7 @@ from agentic_game.agent.prompts import (
     build_battle_response_prompt,
 )
 from agentic_game.agent.state import BattleState
+from agentic_game.application.content_generation import generate_battle_narration
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
 from agentic_game.application.usecases.battle import BattleActionResult
 from agentic_game.domain.battle import BattlePhase
@@ -88,6 +89,7 @@ def battle_execute_tool_node(
     state: BattleState,
     *,
     store: StorePort,
+    llm: LLMPort,
     resolve_battle_tool: ToolInvoker,
     resolve_battle_action: Callable[..., BattleActionResult],
     random: RandomPort,
@@ -99,6 +101,12 @@ def battle_execute_tool_node(
         resolve_battle_tool=resolve_battle_tool,
         resolve_battle_action=resolve_battle_action,
         random=random,
+        summarize_tool_result=lambda tool_result: generate_battle_narration(
+            llm=llm,
+            raw=tool_result.raw,
+            llm_payload=tool_result.llm,
+        )
+        or tool_result.llm["summary"],
     )
 
 
