@@ -4,11 +4,13 @@ from agentic_game.application.ports import StorePort
 from agentic_game.domain.game_state import (
     InventoryState,
     PlayerState,
+    QuestLog,
     SkillBook,
     add_inventory_item,
     add_skill_exp,
     apply_player_delta,
     level_up_skill,
+    update_quest_progress,
 )
 
 PLAYER_NAMESPACE = ("game", "player")
@@ -17,6 +19,8 @@ INVENTORY_NAMESPACE = ("game", "inventory")
 INVENTORY_KEY = "latest"
 SKILLS_NAMESPACE = ("game", "skills")
 SKILLS_KEY = "latest"
+QUESTS_NAMESPACE = ("game", "quests")
+QUESTS_KEY = "latest"
 
 
 class GameStateRepository:
@@ -137,3 +141,43 @@ class GameStateRepository:
         )
         self.save_skills(skill_book)
         return skill_book
+
+    def load_quests(self) -> QuestLog:
+        """Load quest log, returning an empty quest log when none exists."""
+        try:
+            value = self._store.get(
+                namespace=QUESTS_NAMESPACE,
+                key=QUESTS_KEY,
+            )
+        except KeyError:
+            return QuestLog()
+
+        if isinstance(value, QuestLog):
+            return value
+
+        return QuestLog()
+
+    def save_quests(self, quest_log: QuestLog) -> str:
+        """Persist quest log and return its store reference."""
+        return self._store.put(
+            namespace=QUESTS_NAMESPACE,
+            key=QUESTS_KEY,
+            value=quest_log,
+        )
+
+    def update_quest(
+        self,
+        *,
+        quest_id: str,
+        status: str,
+        progress: int,
+    ) -> QuestLog:
+        """Update a quest entry and persist the quest log."""
+        quest_log = update_quest_progress(
+            self.load_quests(),
+            quest_id=quest_id,
+            status=status,
+            progress=progress,
+        )
+        self.save_quests(quest_log)
+        return quest_log

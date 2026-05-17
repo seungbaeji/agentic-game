@@ -155,7 +155,7 @@ def make_quest_wrapper(store: StorePort):
     """Create the parent node that invokes and persists the quest subgraph."""
     return make_simple_subgraph_wrapper(
         store=store,
-        graph=build_quest_subgraph(),
+        graph=build_quest_subgraph(store),
         subgraph=SubgraphName.QUEST,
         initial_phase=QuestPhase.AVAILABLE,
     )

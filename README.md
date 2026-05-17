@@ -41,12 +41,12 @@ src/agentic_game/
 | battle | usecase-backed tool 실행 + player 저장 | `resolve_battle_tool(action)` |
 | craft | usecase-backed tool 실행 + inventory 저장 | `craft_item_tool(recipe)` |
 | exploration | deterministic execute node | 없음 |
-| quest | deterministic execute node | 없음 |
+| quest | deterministic execute/response node + quest/player 저장 | 없음 |
 | trade | deterministic execute node + player/inventory 저장 | 없음 |
 | dialogue | deterministic response 중심 | 없음 |
 | skill_training | deterministic execute node + skill 저장 | 없음 |
 
-즉 일반화된 부분은 `phase/event -> flow -> ScenarioNode -> 공통 LangGraph shape`입니다. 아직 모든 시나리오가 tool/usecase까지 일반화된 것은 아닙니다. 현재 실제 LangChain `@tool`과 payload persistence는 battle/craft에만 있습니다. battle은 `game/player/latest`에 HP/EXP를 저장하고, craft는 `game/inventory/latest`에 제작 아이템을 저장하고, trade는 player gold와 inventory를 갱신하고, skill_training은 `game/skills/latest`에 스킬 성장 상태를 저장합니다.
+즉 일반화된 부분은 `phase/event -> flow -> ScenarioNode -> 공통 LangGraph shape`입니다. 아직 모든 시나리오가 tool/usecase까지 일반화된 것은 아닙니다. 현재 실제 LangChain `@tool`과 payload persistence는 battle/craft에만 있습니다. battle은 `game/player/latest`에 HP/EXP를 저장하고, craft는 `game/inventory/latest`에 제작 아이템을 저장합니다. trade는 player gold와 inventory를 갱신하고, quest는 `game/quests/latest`와 player reward를 갱신하고, skill_training은 `game/skills/latest`에 스킬 성장 상태를 저장합니다.
 
 ## Flow 중심 실행 요약
 

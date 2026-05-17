@@ -4,10 +4,12 @@ from langgraph.store.memory import InMemoryStore
 
 from agentic_game.application.game_state import GameStateRepository
 from agentic_game.application.usecases import (
+    complete_quest,
     craft_item,
     craft_item_and_store_reward,
     exchange_item,
     level_up_trained_skill,
+    mark_quest_progress,
     practice_skill,
     resolve_battle_action,
     resolve_battle_action_and_store_player,
@@ -107,6 +109,24 @@ def test_trade_exchange_item_updates_player_gold_and_inventory() -> None:
     assert player.gold == 85
     assert inventory.items[0].item_id == "travel_ration"
     assert inventory.items[0].quantity == 1
+
+
+def test_quest_usecases_update_quest_log_and_player_rewards() -> None:
+    store = LangGraphStoreAdapter(InMemoryStore())
+    game_state = GameStateRepository(store)
+
+    progress_result = mark_quest_progress(game_state=game_state)
+    complete_result = complete_quest(game_state=game_state)
+
+    quest_log = game_state.load_quests()
+    player = game_state.load_player()
+
+    assert progress_result.quest_log.quests[0].status == "ready_to_turn_in"
+    assert complete_result.quest_log.quests[0].status == "complete"
+    assert quest_log.quests[0].quest_id == "old_ruins"
+    assert quest_log.quests[0].progress == 100
+    assert player.exp == 25
+    assert player.gold == 120
 
 
 def test_tool_schema_hides_injected_dependencies() -> None:

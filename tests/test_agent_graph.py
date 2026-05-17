@@ -258,6 +258,11 @@ def test_agent_graph_routes_quest_and_keeps_context_until_turn_in() -> None:
     assert saved_state["event"] == "progress"
     assert "next_node" not in saved_state
 
+    quest_log = container.store.get(namespace=("game", "quests"), key="latest")
+    assert quest_log.quests[0].quest_id == "old_ruins"
+    assert quest_log.quests[0].status == "ready_to_turn_in"
+    assert quest_log.quests[0].progress == 100
+
 
 def test_agent_graph_routes_dialogue_and_keeps_context_until_reward() -> None:
     llm = TestingLLMAdapter()

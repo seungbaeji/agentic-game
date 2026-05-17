@@ -33,6 +33,18 @@ class SkillBook:
     skills: tuple[SkillProgress, ...] = ()
 
 
+@dataclass(frozen=True, slots=True)
+class QuestProgress:
+    quest_id: str
+    status: str
+    progress: int
+
+
+@dataclass(frozen=True, slots=True)
+class QuestLog:
+    quests: tuple[QuestProgress, ...] = ()
+
+
 def add_inventory_item(
     inventory: InventoryState,
     *,
@@ -109,6 +121,42 @@ def add_skill_exp(
         updated_skills.append(SkillProgress(skill_id=skill_id, level=1, exp=exp))
 
     return SkillBook(skills=tuple(updated_skills))
+
+
+def update_quest_progress(
+    quest_log: QuestLog,
+    *,
+    quest_id: str,
+    status: str,
+    progress: int,
+) -> QuestLog:
+    """Return quest log with an updated quest entry."""
+    updated_quests: list[QuestProgress] = []
+    quest_found = False
+
+    for quest in quest_log.quests:
+        if quest.quest_id == quest_id:
+            updated_quests.append(
+                QuestProgress(
+                    quest_id=quest.quest_id,
+                    status=status,
+                    progress=progress,
+                )
+            )
+            quest_found = True
+        else:
+            updated_quests.append(quest)
+
+    if not quest_found:
+        updated_quests.append(
+            QuestProgress(
+                quest_id=quest_id,
+                status=status,
+                progress=progress,
+            )
+        )
+
+    return QuestLog(quests=tuple(updated_quests))
 
 
 def level_up_skill(

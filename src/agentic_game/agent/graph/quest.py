@@ -5,18 +5,19 @@ from agentic_game.agent.graph.scenario_graph import (
     build_simple_scenario_subgraph,
 )
 from agentic_game.agent.nodes.quest import (
+    make_quest_execute_node,
+    make_quest_response_node,
     quest_ask_user_node,
     quest_decision_node,
-    quest_execute_node,
     quest_flow_node,
     quest_hitl_node,
-    quest_response_node,
 )
 from agentic_game.agent.nodes.scenario_nodes import scenario_decision_route, scenario_route
 from agentic_game.agent.state import QuestState
+from agentic_game.application.ports import StorePort
 
 
-def build_quest_subgraph():
+def build_quest_subgraph(store: StorePort):
     """Build the LangGraph subgraph that runs the quest workflow."""
     return build_simple_scenario_subgraph(
         state_schema=QuestState,
@@ -24,8 +25,8 @@ def build_quest_subgraph():
             decision=quest_decision_node,
             flow=quest_flow_node,
             hitl=quest_hitl_node,
-            execute=quest_execute_node,
-            response=quest_response_node,
+            execute=make_quest_execute_node(store),
+            response=make_quest_response_node(store),
             ask_user=quest_ask_user_node,
         ),
         route=scenario_route,
