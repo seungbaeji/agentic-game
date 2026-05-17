@@ -14,8 +14,8 @@ from agentic_game.agent.nodes.parent import (
 from agentic_game.agent.state import ParentState
 from agentic_game.agent.transitions import PARENT_DECISION_EDGES, PARENT_DIRECT_EDGES
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
+from agentic_game.application.usecases.battle import BattleActionResult
 from agentic_game.application.usecases.craft import CraftItemResult
-from agentic_game.domain.battle import BattleResult
 from agentic_game.engine.tool_runner import ToolInvoker
 from agentic_game.scenarios.registry import (
     make_battle_wrapper,
@@ -41,7 +41,7 @@ def build_parent_graph(
     llm: LLMPort,
     resolve_battle_tool: ToolInvoker,
     craft_item_tool: ToolInvoker,
-    resolve_battle_action: Callable[..., BattleResult],
+    resolve_battle_action: Callable[..., BattleActionResult],
     craft_item: Callable[..., CraftItemResult],
     random: RandomPort,
 ):

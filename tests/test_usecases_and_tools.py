@@ -9,6 +9,7 @@ from agentic_game.application.usecases import (
     level_up_trained_skill,
     practice_skill,
     resolve_battle_action,
+    resolve_battle_action_and_store_player,
 )
 from agentic_game.domain.battle import BattleOutcome
 from agentic_game.outbound.store import LangGraphStoreAdapter
@@ -22,6 +23,24 @@ def test_resolve_battle_action_uses_random_port() -> None:
 
     assert result.outcome == BattleOutcome.CRITICAL_HIT
     assert result.damage == 11
+
+
+def test_resolve_battle_action_and_store_player_adds_exp() -> None:
+    store = LangGraphStoreAdapter(InMemoryStore())
+    game_state = GameStateRepository(store)
+
+    result = resolve_battle_action_and_store_player(
+        "attack",
+        random=FixedRandom(d20=[18], damage=[11]),
+        game_state=game_state,
+    )
+
+    player = game_state.load_player()
+
+    assert result.player_delta is not None
+    assert result.player_delta.exp_gain == 20
+    assert player.hp == 100
+    assert player.exp == 20
 
 
 def test_craft_item_uses_random_port() -> None:
@@ -79,17 +98,20 @@ def test_tool_schema_hides_injected_dependencies() -> None:
 
 
 def test_resolve_battle_tool_returns_internal_dataclass() -> None:
+    store = LangGraphStoreAdapter(InMemoryStore())
     result = resolve_battle_tool.invoke(
         {
             "action": "attack",
-            "resolve_battle_action": resolve_battle_action,
+            "resolve_battle_action": resolve_battle_action_and_store_player,
             "random": FixedRandom(d20=[12], damage=[8]),
+            "game_state": GameStateRepository(store),
         }
     )
 
     assert isinstance(result, ToolResult)
     assert result.raw["outcome"] == BattleOutcome.HIT.value
     assert result.raw["damage"] == 8
+    assert result.raw["player_delta"] == {"hp_change": 0, "exp_gain": 10}
     assert result.metadata["system_event"] == "tool.battle.resolve.completed"
 
 

@@ -9,7 +9,7 @@ from agentic_game.agent.graph.parent import build_parent_graph
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
 from agentic_game.application.usecases import (
     craft_item_and_store_reward,
-    resolve_battle_action,
+    resolve_battle_action_and_store_player,
 )
 from agentic_game.config import Settings, get_settings
 from agentic_game.outbound.llm import create_llm_adapter
@@ -57,7 +57,7 @@ def build_agent_graph(container: AppContainer):
         container.llm,
         resolve_battle_tool,
         craft_item_tool,
-        resolve_battle_action,
+        resolve_battle_action_and_store_player,
         craft_item_and_store_reward,
         container.random,
     )

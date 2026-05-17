@@ -3,12 +3,16 @@ from __future__ import annotations
 from agentic_game.application.ports import StorePort
 from agentic_game.domain.game_state import (
     InventoryState,
+    PlayerState,
     SkillBook,
     add_inventory_item,
     add_skill_exp,
+    apply_player_delta,
     level_up_skill,
 )
 
+PLAYER_NAMESPACE = ("game", "player")
+PLAYER_KEY = "latest"
 INVENTORY_NAMESPACE = ("game", "inventory")
 INVENTORY_KEY = "latest"
 SKILLS_NAMESPACE = ("game", "skills")
@@ -18,6 +22,44 @@ SKILLS_KEY = "latest"
 class GameStateRepository:
     def __init__(self, store: StorePort) -> None:
         self._store = store
+
+    def load_player(self) -> PlayerState:
+        """Load player state, returning the default player when none exists."""
+        try:
+            value = self._store.get(
+                namespace=PLAYER_NAMESPACE,
+                key=PLAYER_KEY,
+            )
+        except KeyError:
+            return PlayerState()
+
+        if isinstance(value, PlayerState):
+            return value
+
+        return PlayerState()
+
+    def save_player(self, player: PlayerState) -> str:
+        """Persist player state and return its store reference."""
+        return self._store.put(
+            namespace=PLAYER_NAMESPACE,
+            key=PLAYER_KEY,
+            value=player,
+        )
+
+    def apply_player_delta(
+        self,
+        *,
+        hp_change: int = 0,
+        exp_gain: int = 0,
+    ) -> PlayerState:
+        """Apply player HP/EXP changes and persist the updated player."""
+        player = apply_player_delta(
+            self.load_player(),
+            hp_change=hp_change,
+            exp_gain=exp_gain,
+        )
+        self.save_player(player)
+        return player
 
     def load_inventory(self) -> InventoryState:
         """Load player inventory, returning an empty inventory when none exists."""

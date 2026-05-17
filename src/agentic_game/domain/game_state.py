@@ -15,6 +15,12 @@ class InventoryState:
 
 
 @dataclass(frozen=True, slots=True)
+class PlayerState:
+    hp: int = 100
+    exp: int = 0
+
+
+@dataclass(frozen=True, slots=True)
 class SkillProgress:
     skill_id: str
     level: int
@@ -55,6 +61,19 @@ def add_inventory_item(
         updated_items.append(InventoryItem(item_id=item_id, quantity=quantity))
 
     return InventoryState(items=tuple(updated_items))
+
+
+def apply_player_delta(
+    player: PlayerState,
+    *,
+    hp_change: int = 0,
+    exp_gain: int = 0,
+) -> PlayerState:
+    """Return player state after applying bounded HP and EXP changes."""
+    return PlayerState(
+        hp=max(0, player.hp + hp_change),
+        exp=max(0, player.exp + exp_gain),
+    )
 
 
 def add_skill_exp(

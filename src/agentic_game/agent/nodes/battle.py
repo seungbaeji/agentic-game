@@ -10,7 +10,8 @@ from agentic_game.agent.prompts import (
 )
 from agentic_game.agent.state import BattleState
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
-from agentic_game.domain.battle import BattlePhase, BattleResult
+from agentic_game.application.usecases.battle import BattleActionResult
+from agentic_game.domain.battle import BattlePhase
 from agentic_game.engine.tool_runner import ToolInvoker, execute_battle_tool
 from agentic_game.flow.battle import (
     serialize_battle_actions,
@@ -88,7 +89,7 @@ def battle_execute_tool_node(
     *,
     store: StorePort,
     resolve_battle_tool: ToolInvoker,
-    resolve_battle_action: Callable[..., BattleResult],
+    resolve_battle_action: Callable[..., BattleActionResult],
     random: RandomPort,
 ) -> BattleState:
     """Invoke the battle tool and persist its raw, LLM, and UI payloads."""
@@ -126,4 +127,3 @@ def battle_ask_user_node(state: BattleState) -> BattleState:
     return {
         "response": "전투 행동을 선택해 주세요. 가능한 행동: 공격 / 방어 / 도망",
     }
-

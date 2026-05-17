@@ -7,7 +7,7 @@ from agentic_game.agent.state import BattleState, CraftState
 from agentic_game.agent.types import PhasePayloadRefs, RuntimeState, ToolInput
 from agentic_game.application.game_state import GameStateRepository
 from agentic_game.application.ports import RandomPort, StorePort
-from agentic_game.domain.battle import BattleEvent, BattlePhase, BattleResult
+from agentic_game.domain.battle import BattleEvent, BattlePhase
 from agentic_game.domain.craft import CraftEvent, CraftPhase
 from agentic_game.scenarios.spec import ScenarioNode
 from agentic_game.tools.types import ToolResult
@@ -68,7 +68,7 @@ def execute_battle_tool(
     state: BattleState,
     store: StorePort,
     resolve_battle_tool: ToolInvoker,
-    resolve_battle_action: Callable[..., BattleResult],
+    resolve_battle_action: Callable[..., object],
     random: RandomPort,
 ) -> BattleState:
     """Invoke the battle tool and return the battle graph state update."""
@@ -84,6 +84,7 @@ def execute_battle_tool(
         "action": action,
         "resolve_battle_action": resolve_battle_action,
         "random": random,
+        "game_state": GameStateRepository(store),
     })
     ref_update = persist_tool_result(
         store=store,

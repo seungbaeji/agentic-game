@@ -17,7 +17,7 @@ from agentic_game.agent.nodes.battle import (
 from agentic_game.agent.nodes.scenario_nodes import scenario_decision_route, scenario_route
 from agentic_game.agent.state import BattleState
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
-from agentic_game.domain.battle import BattleResult
+from agentic_game.application.usecases.battle import BattleActionResult
 from agentic_game.engine.tool_runner import ToolInvoker
 
 
@@ -25,7 +25,7 @@ def build_battle_subgraph(
     store: StorePort,
     llm: LLMPort,
     resolve_battle_tool: ToolInvoker,
-    resolve_battle_action: Callable[..., BattleResult],
+    resolve_battle_action: Callable[..., BattleActionResult],
     random: RandomPort,
 ):
     """Build the LangGraph subgraph that runs the battle workflow."""

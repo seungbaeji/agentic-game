@@ -15,8 +15,9 @@ from agentic_game.agent.models import ParentNode, SubgraphName
 from agentic_game.agent.state import CraftState, ParentState
 from agentic_game.agent.types import RuntimePayload, StoreRefs
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
+from agentic_game.application.usecases.battle import BattleActionResult
 from agentic_game.application.usecases.craft import CraftItemResult
-from agentic_game.domain.battle import BattlePhase, BattleResult
+from agentic_game.domain.battle import BattlePhase
 from agentic_game.domain.craft import CraftPhase
 from agentic_game.domain.dialogue import DialoguePhase
 from agentic_game.domain.exploration import ExplorationPhase
@@ -52,7 +53,7 @@ def make_battle_wrapper(
     store: StorePort,
     llm: LLMPort,
     resolve_battle_tool: ToolInvoker,
-    resolve_battle_action: Callable[..., BattleResult],
+    resolve_battle_action: Callable[..., BattleActionResult],
     random: RandomPort,
 ):
     """Create the parent node that invokes and persists the battle subgraph."""

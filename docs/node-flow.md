@@ -171,7 +171,7 @@ scenario wrapper는 subgraph를 실행한 뒤 parent response로 갑니다. ask 
 
 | Scenario | Execute/Response 방식 | Store payload |
 | --- | --- | --- |
-| battle | `engine/tool_runner.py` -> `resolve_battle_tool` -> `resolve_battle_action` | raw/llm/ui 저장 |
+| battle | `engine/tool_runner.py` -> `resolve_battle_tool` -> `resolve_battle_action_and_store_player` | raw/llm/ui 저장 + player 저장 |
 | craft | `engine/tool_runner.py` -> `craft_item_tool` -> `craft_item_and_store_reward` | raw/llm/ui 저장 + inventory 저장 |
 | exploration | deterministic execute node | 없음 |
 | quest | deterministic execute node | 없음 |
@@ -179,7 +179,7 @@ scenario wrapper는 subgraph를 실행한 뒤 parent response로 갑니다. ask 
 | dialogue | deterministic response 중심 | 없음 |
 | skill_training | deterministic execute node | skill book 저장 |
 
-따라서 현재 일반화된 핵심은 graph shape와 phase/event flow입니다. tool/usecase/payload persistence는 battle/craft에만 구현되어 있습니다. craft는 성공한 제작 결과를 `game/inventory/latest`에 반영하고, skill_training은 훈련/레벨업 결과를 `game/skills/latest`에 반영합니다. 다른 시나리오는 이 구조를 확장하기 위한 lightweight sample입니다.
+따라서 현재 일반화된 핵심은 graph shape와 phase/event flow입니다. tool/usecase/payload persistence는 battle/craft에만 구현되어 있습니다. battle은 전투 결과를 `game/player/latest`에 반영하고, craft는 성공한 제작 결과를 `game/inventory/latest`에 반영하고, skill_training은 훈련/레벨업 결과를 `game/skills/latest`에 반영합니다. 다른 시나리오는 이 구조를 확장하기 위한 lightweight sample입니다.
 
 ## Battle Subgraph
 
@@ -365,10 +365,11 @@ runtime 처리 순서:
 
 1. `BattleEvent`를 tool action 문자열로 변환한다.
 2. hydrated `resolve_battle_tool`을 invoke한다.
-3. tool이 application usecase `resolve_battle_action`을 호출한다.
-4. tool result를 raw/llm/ui payload로 projection한다.
-5. store에 payload를 저장한다.
-6. `latest_refs`, `history_refs`, `response`, `next_node`를 반환한다.
+3. tool이 application usecase `resolve_battle_action_and_store_player`를 호출한다.
+4. usecase가 결과에 따라 `GameStateRepository`로 player HP/EXP를 갱신한다.
+5. tool result를 raw/llm/ui payload로 projection한다.
+6. store에 payload를 저장한다.
+7. `latest_refs`, `history_refs`, `response`, `next_node`를 반환한다.
 
 store 저장 형태:
 
@@ -379,6 +380,14 @@ battle / resolve / ui / latest
 battle / resolve / raw / history / 1
 ...
 ```
+
+게임 상태 저장 형태:
+
+```text
+game / player / latest
+```
+
+현재 attack hit/critical hit은 EXP를 올리고, guard broken/failed escape는 HP를 낮춥니다.
 
 graph state에는 store ref만 남깁니다.
 
@@ -629,6 +638,7 @@ runtime state
   <scenario> / <phase> / <payload> / history / <version>
 
 game state
+  game / player / latest
   game / inventory / latest
   game / skills / latest
 ```

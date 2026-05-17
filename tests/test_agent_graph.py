@@ -30,6 +30,10 @@ def test_agent_graph_hydrates_flat_tools_for_battle_flow() -> None:
     assert saved_state["latest_refs"]["resolve.raw"] == "store://battle/resolve/raw/latest"
     assert "next_node" not in saved_state
 
+    player = container.store.get(namespace=("game", "player"), key="latest")
+    assert player.hp == 100
+    assert player.exp == 20
+
 
 def test_agent_graph_describes_capabilities_without_internal_reason() -> None:
     llm = TestingLLMAdapter()

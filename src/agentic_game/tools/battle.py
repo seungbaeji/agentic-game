@@ -13,7 +13,8 @@ def resolve_battle_tool(
     action: str,
     resolve_battle_action: Annotated[Any, InjectedToolArg],
     random: Annotated[Any, InjectedToolArg],
+    game_state: Annotated[Any, InjectedToolArg],
 ) -> ToolResult:
     """Resolve a battle action. Input action must be attack, defend, or flee."""
-    result = resolve_battle_action(action, random=random)
+    result = resolve_battle_action(action, random=random, game_state=game_state)
     return battle_result_to_tool_result(result)

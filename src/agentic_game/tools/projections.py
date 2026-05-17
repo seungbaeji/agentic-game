@@ -1,17 +1,25 @@
 from __future__ import annotations
 
+from agentic_game.application.usecases.battle import BattleActionResult
 from agentic_game.application.usecases.craft import CraftItemResult
-from agentic_game.domain.battle import BattleResult
 from agentic_game.tools.types import ToolResult
 
 
-def battle_result_to_tool_result(result: BattleResult) -> ToolResult:
+def battle_result_to_tool_result(result: BattleActionResult) -> ToolResult:
     """Project a battle domain result into raw, LLM, UI, and metadata payloads."""
     raw = {
         "action": result.action,
         "dice": result.dice,
         "outcome": result.outcome.value,
         "damage": result.damage,
+        "player_delta": (
+            {
+                "hp_change": result.player_delta.hp_change,
+                "exp_gain": result.player_delta.exp_gain,
+            }
+            if result.player_delta is not None
+            else None
+        ),
     }
 
     return ToolResult(
