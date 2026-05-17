@@ -13,7 +13,8 @@ def craft_item_tool(
     recipe: str,
     craft_item: Annotated[Any, InjectedToolArg],
     random: Annotated[Any, InjectedToolArg],
+    game_state: Annotated[Any, InjectedToolArg],
 ) -> ToolResult:
     """Craft an item. Input recipe must be potion or sword."""
-    result = craft_item(recipe, random=random)
+    result = craft_item(recipe, random=random, game_state=game_state)
     return craft_result_to_tool_result(result)

@@ -5,9 +5,10 @@ from typing import Protocol
 
 from agentic_game.agent.state import BattleState, CraftState
 from agentic_game.agent.types import PhasePayloadRefs, RuntimeState, ToolInput
+from agentic_game.application.game_state import GameStateRepository
 from agentic_game.application.ports import RandomPort, StorePort
 from agentic_game.domain.battle import BattleEvent, BattlePhase, BattleResult
-from agentic_game.domain.craft import CraftEvent, CraftPhase, CraftResult
+from agentic_game.domain.craft import CraftEvent, CraftPhase
 from agentic_game.scenarios.spec import ScenarioNode
 from agentic_game.tools.types import ToolResult
 
@@ -105,7 +106,7 @@ def execute_craft_tool(
     state: CraftState,
     store: StorePort,
     craft_item_tool: ToolInvoker,
-    craft_item: Callable[..., CraftResult],
+    craft_item: Callable[..., object],
     random: RandomPort,
 ) -> CraftState:
     """Invoke the craft tool and return the craft graph state update."""
@@ -121,6 +122,7 @@ def execute_craft_tool(
         "recipe": recipe,
         "craft_item": craft_item,
         "random": random,
+        "game_state": GameStateRepository(store),
     })
     ref_update = persist_tool_result(
         store=store,

@@ -15,8 +15,9 @@ from agentic_game.agent.models import ParentNode, SubgraphName
 from agentic_game.agent.state import CraftState, ParentState
 from agentic_game.agent.types import RuntimePayload, StoreRefs
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
+from agentic_game.application.usecases.craft import CraftItemResult
 from agentic_game.domain.battle import BattlePhase, BattleResult
-from agentic_game.domain.craft import CraftPhase, CraftResult
+from agentic_game.domain.craft import CraftPhase
 from agentic_game.domain.dialogue import DialoguePhase
 from agentic_game.domain.exploration import ExplorationPhase
 from agentic_game.domain.quest import QuestPhase
@@ -81,7 +82,7 @@ def make_craft_wrapper(
     store: StorePort,
     llm: LLMPort,
     craft_item_tool: ToolInvoker,
-    craft_item: Callable[..., CraftResult],
+    craft_item: Callable[..., CraftItemResult],
     random: RandomPort,
 ):
     """Create the parent node that invokes and persists the craft subgraph."""

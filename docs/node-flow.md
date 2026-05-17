@@ -172,14 +172,14 @@ scenario wrapper는 subgraph를 실행한 뒤 parent response로 갑니다. ask 
 | Scenario | Execute/Response 방식 | Store payload |
 | --- | --- | --- |
 | battle | `engine/tool_runner.py` -> `resolve_battle_tool` -> `resolve_battle_action` | raw/llm/ui 저장 |
-| craft | `engine/tool_runner.py` -> `craft_item_tool` -> `craft_item` | raw/llm/ui 저장 |
+| craft | `engine/tool_runner.py` -> `craft_item_tool` -> `craft_item_and_store_reward` | raw/llm/ui 저장 + inventory 저장 |
 | exploration | deterministic execute node | 없음 |
 | quest | deterministic execute node | 없음 |
 | trade | deterministic execute node | 없음 |
 | dialogue | deterministic response 중심 | 없음 |
 | skill_training | deterministic execute node | 없음 |
 
-따라서 현재 일반화된 핵심은 graph shape와 phase/event flow입니다. tool/usecase/payload persistence는 battle/craft에만 구현되어 있고, 다른 시나리오는 이 구조를 확장하기 위한 lightweight sample입니다.
+따라서 현재 일반화된 핵심은 graph shape와 phase/event flow입니다. tool/usecase/payload persistence는 battle/craft에만 구현되어 있습니다. craft는 성공한 제작 결과를 `game/inventory/latest`에 반영합니다. 다른 시나리오는 이 구조를 확장하기 위한 lightweight sample입니다.
 
 ## Battle Subgraph
 
@@ -545,10 +545,11 @@ runtime 처리 순서:
 
 1. `CraftEvent`를 recipe 문자열로 변환한다.
 2. hydrated `craft_item_tool`을 invoke한다.
-3. tool이 application usecase `craft_item`을 호출한다.
-4. tool result를 raw/llm/ui payload로 projection한다.
-5. store에 payload를 저장한다.
-6. response와 refs를 반환한다.
+3. tool이 application usecase `craft_item_and_store_reward`를 호출한다.
+4. 제작 성공이면 `GameStateRepository`가 inventory에 item을 추가한다.
+5. tool result를 raw/llm/ui payload로 projection한다.
+6. store에 payload를 저장한다.
+7. response와 refs를 반환한다.
 
 저장 namespace:
 
@@ -559,6 +560,14 @@ craft / result / ui / latest
 craft / result / raw / history / 1
 ...
 ```
+
+게임 상태 저장 형태:
+
+```text
+game / inventory / latest
+```
+
+현재 craft 성공 시 `healing_potion`, `old_sword` 같은 제작 결과가 inventory에 누적됩니다. 이 inventory는 tool payload가 아니라 플레이어 게임 상태입니다.
 
 ## Lightweight Scenario Execute Nodes
 
@@ -610,6 +619,18 @@ potion 제작 성공
 이 응답은 LLM이나 tool을 다시 호출하지 않고 `flow/craft.py`의 간단한 flow 함수로 처리됩니다.
 
 ## State Persistence
+
+Store에는 두 종류의 데이터가 저장됩니다.
+
+```text
+runtime state
+  <scenario> / state / latest
+  <scenario> / <phase> / <payload> / latest
+  <scenario> / <phase> / <payload> / history / <version>
+
+game state
+  game / inventory / latest
+```
 
 Parent graph는 각 subgraph state를 store에 저장합니다.
 

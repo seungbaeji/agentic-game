@@ -1,7 +1,7 @@
 from __future__ import annotations
 
+from agentic_game.application.usecases.craft import CraftItemResult
 from agentic_game.domain.battle import BattleResult
-from agentic_game.domain.craft import CraftResult
 from agentic_game.tools.types import ToolResult
 
 
@@ -31,7 +31,7 @@ def battle_result_to_tool_result(result: BattleResult) -> ToolResult:
     )
 
 
-def craft_result_to_tool_result(result: CraftResult) -> ToolResult:
+def craft_result_to_tool_result(result: CraftItemResult) -> ToolResult:
     """Project a craft domain result into raw, LLM, UI, and metadata payloads."""
     raw = {
         "recipe": result.recipe,
@@ -39,6 +39,14 @@ def craft_result_to_tool_result(result: CraftResult) -> ToolResult:
         "dice": result.dice,
         "success": result.success,
         "bonus": result.bonus,
+        "inventory_delta": (
+            {
+                "item_id": result.inventory_delta.item_id,
+                "quantity": result.inventory_delta.quantity,
+            }
+            if result.inventory_delta is not None
+            else None
+        ),
     }
 
     return ToolResult(

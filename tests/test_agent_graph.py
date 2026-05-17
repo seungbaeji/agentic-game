@@ -134,6 +134,10 @@ def test_agent_graph_continues_craft_after_recipe_selection() -> None:
     assert saved_state["latest_refs"]["result.raw"] == "store://craft/result/raw/latest"
     assert "next_node" not in saved_state
 
+    inventory = container.store.get(namespace=("game", "inventory"), key="latest")
+    assert inventory.items[0].item_id == "healing_potion"
+    assert inventory.items[0].quantity == 1
+
 
 def test_agent_graph_routes_exploration_and_keeps_context() -> None:
     llm = TestingLLMAdapter()

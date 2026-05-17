@@ -10,7 +10,8 @@ from agentic_game.agent.prompts import (
 )
 from agentic_game.agent.state import CraftState
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
-from agentic_game.domain.craft import CraftEvent, CraftPhase, CraftResult
+from agentic_game.application.usecases.craft import CraftItemResult
+from agentic_game.domain.craft import CraftEvent, CraftPhase
 from agentic_game.engine.tool_runner import ToolInvoker, execute_craft_tool
 from agentic_game.flow.craft import (
     serialize_craft_actions,
@@ -106,7 +107,7 @@ def craft_execute_tool_node(
     *,
     store: StorePort,
     craft_item_tool: ToolInvoker,
-    craft_item: Callable[..., CraftResult],
+    craft_item: Callable[..., CraftItemResult],
     random: RandomPort,
 ) -> CraftState:
     """Invoke the craft tool and persist its raw, LLM, and UI payloads."""
@@ -144,4 +145,3 @@ def craft_ask_user_node(state: CraftState) -> CraftState:
     return {
         "response": "제작할 아이템을 선택해 주세요. 가능한 선택: 포션 / 검",
     }
-
