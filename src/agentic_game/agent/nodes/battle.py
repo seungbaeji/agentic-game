@@ -3,13 +3,11 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from agentic_game.agent.decisions import BattleDecision
-from agentic_game.agent.models import BattleNode
 from agentic_game.agent.nodes.scenario_nodes import make_flow_node
 from agentic_game.agent.prompts import (
     build_battle_decision_prompt,
     build_battle_response_prompt,
 )
-from agentic_game.agent.routing import battle_node_for_scenario_node
 from agentic_game.agent.state import BattleState
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
 from agentic_game.domain.battle import BattlePhase, BattleResult
@@ -19,10 +17,11 @@ from agentic_game.flow.battle import (
 )
 from agentic_game.scenarios.battle import infer_battle_event
 from agentic_game.scenarios.definitions import BATTLE_SCENARIO
+from agentic_game.scenarios.spec import ScenarioNode
 
 _battle_flow_node = make_flow_node(
     spec=BATTLE_SCENARIO,
-    node_for=battle_node_for_scenario_node,
+    node_for=lambda node: node,
     invalid_event_message="현재 전투 phase에서 허용되지 않은 event입니다.",
 )
 
@@ -43,7 +42,7 @@ def make_battle_decision_node(llm: LLMPort):
                 "event": inferred_event,
                 "available_actions": available_actions,
                 "reason": "user_input에서 명시적인 전투 행동을 감지했습니다.",
-                "next_node": BattleNode.FLOW,
+                "next_node": ScenarioNode.FLOW,
             }
 
         decision = llm.structured_output(
@@ -60,7 +59,7 @@ def make_battle_decision_node(llm: LLMPort):
             "event": decision.event,
             "available_actions": available_actions,
             "reason": decision.reason,
-            "next_node": BattleNode.FLOW,
+            "next_node": ScenarioNode.FLOW,
         }
 
     return battle_decision_node
@@ -76,11 +75,11 @@ def battle_hitl_node(state: BattleState) -> BattleState:
     if not state.get("human_input"):
         return {
             "response": ("HITL 필요: 전투 행동을 선택하세요. 가능한 행동: attack / defend / flee"),
-            "next_node": BattleNode.RESPONSE,
+            "next_node": ScenarioNode.ASK_USER,
         }
 
     return {
-        "next_node": BattleNode.DECISION,
+        "next_node": ScenarioNode.DECISION,
     }
 
 
@@ -128,7 +127,3 @@ def battle_ask_user_node(state: BattleState) -> BattleState:
         "response": "전투 행동을 선택해 주세요. 가능한 행동: 공격 / 방어 / 도망",
     }
 
-
-def battle_route(state: BattleState) -> str:
-    """Read the next battle node selected by the previous node."""
-    return state["next_node"]

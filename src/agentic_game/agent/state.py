@@ -3,8 +3,6 @@ from __future__ import annotations
 from typing import TypedDict
 
 from agentic_game.agent.models import (
-    BattleNode,
-    CraftNode,
     ParentNode,
     SubgraphName,
 )
@@ -45,6 +43,7 @@ from agentic_game.domain.trade import (
     TradePhase,
 )
 from agentic_game.flow.models import AvailableActions
+from agentic_game.scenarios.spec import ScenarioNode
 
 
 class ParentState(TypedDict, total=False):
@@ -70,7 +69,7 @@ class BattleState(TypedDict, total=False):
     available_actions: AvailableActions
     response: ResponseText
     reason: ReasonText
-    next_node: BattleNode
+    next_node: ScenarioNode
 
 
 class CraftState(TypedDict, total=False):
@@ -86,7 +85,7 @@ class CraftState(TypedDict, total=False):
     available_actions: AvailableActions
     response: ResponseText
     reason: ReasonText
-    next_node: CraftNode
+    next_node: ScenarioNode
 
 
 class ExplorationState(TypedDict, total=False):

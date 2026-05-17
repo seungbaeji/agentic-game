@@ -20,24 +20,6 @@ class ParentNode(StrEnum):
     ASK_USER = "parent_ask_user"
 
 
-class BattleNode(StrEnum):
-    DECISION = "battle_decision"
-    FLOW = "battle_flow"
-    HITL = "battle_hitl"
-    EXECUTE = "battle_execute_tool"
-    RESPONSE = "battle_response"
-    ASK_USER = "battle_ask_user"
-
-
-class CraftNode(StrEnum):
-    DECISION = "craft_decision"
-    FLOW = "craft_flow"
-    HITL = "craft_hitl"
-    EXECUTE = "craft_execute_tool"
-    RESPONSE = "craft_response"
-    ASK_USER = "craft_ask_user"
-
-
 @dataclass(frozen=True)
 class SubgraphEntry:
     name: SubgraphName

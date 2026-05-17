@@ -3,53 +3,22 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from agentic_game.agent.graph.scenario_graph import (
-    ScenarioGraphDefinition,
     ScenarioGraphNodes,
-    build_scenario_definition_subgraph,
+    build_simple_scenario_subgraph,
 )
-from agentic_game.agent.models import BattleNode
 from agentic_game.agent.nodes.battle import (
     battle_ask_user_node,
     battle_execute_tool_node,
     battle_flow_node,
     battle_hitl_node,
-    battle_route,
     make_battle_decision_node,
     make_battle_response_node,
 )
+from agentic_game.agent.nodes.scenario_nodes import scenario_decision_route, scenario_route
 from agentic_game.agent.state import BattleState
-from agentic_game.agent.transitions import (
-    BATTLE_DIRECT_EDGES,
-    BATTLE_FLOW_EDGES,
-    BATTLE_HITL_EDGES,
-)
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
 from agentic_game.domain.battle import BattleResult
 from agentic_game.engine.tool_runner import ToolInvoker
-
-
-def make_battle_graph_definition(
-    *,
-    llm: LLMPort,
-    execute: Callable[[BattleState], BattleState],
-) -> ScenarioGraphDefinition:
-    """Create the graph definition for the battle scenario."""
-    return ScenarioGraphDefinition(
-        state_schema=BattleState,
-        node_names=BattleNode,
-        graph_nodes=ScenarioGraphNodes(
-            decision=make_battle_decision_node(llm),
-            flow=battle_flow_node,
-            hitl=battle_hitl_node,
-            execute=execute,
-            response=make_battle_response_node(llm),
-            ask_user=battle_ask_user_node,
-        ),
-        route=battle_route,
-        flow_edges=BATTLE_FLOW_EDGES,
-        hitl_edges=BATTLE_HITL_EDGES,
-        direct_edges=BATTLE_DIRECT_EDGES,
-    )
 
 
 def build_battle_subgraph(
@@ -70,6 +39,16 @@ def build_battle_subgraph(
             random=random,
         )
 
-    return build_scenario_definition_subgraph(
-        make_battle_graph_definition(llm=llm, execute=execute_with_store)
+    return build_simple_scenario_subgraph(
+        state_schema=BattleState,
+        graph_nodes=ScenarioGraphNodes(
+            decision=make_battle_decision_node(llm),
+            flow=battle_flow_node,
+            hitl=battle_hitl_node,
+            execute=execute_with_store,
+            response=make_battle_response_node(llm),
+            ask_user=battle_ask_user_node,
+        ),
+        route=scenario_route,
+        decision_route=scenario_decision_route,
     )

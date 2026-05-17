@@ -115,10 +115,9 @@ RESOLVE --complete--> COMPLETE
 
 - phase/event transition table 관리
 - 현재 phase에서 가능한 action 직렬화
-- 입력 문장에서 명시적 intent 추론
 - 이전 결과에 대한 간단한 follow-up 응답
 
-`flow`는 LangGraph node를 모릅니다. `BattleNode`, `CraftNode` 같은 agent runtime 개념을 import하지 않습니다.
+`flow`는 LangGraph node를 모릅니다. phase/event 전이만 다루고, graph 실행 단계 선택은 `ScenarioSpec.phase_to_node`가 담당합니다.
 
 ### application
 
@@ -230,7 +229,6 @@ agent/
   decisions.py
   models.py
   prompts.py
-  routing.py
   state.py
   transitions.py
   types.py
@@ -272,15 +270,9 @@ node 안에 길고 복잡한 business logic, prompt 문자열, store orchestrati
 
 #### transitions.py
 
-`transitions.py`는 LangGraph edge table입니다.
+`transitions.py`는 parent graph edge table입니다.
 
-여기에는 `add_conditional_edges`에 들어갈 mapping과 직접 edge 목록만 둡니다. node 함수 안에 흩어져 있던 LangGraph-level 전이를 모아 한눈에 볼 수 있게 합니다.
-
-#### routing.py
-
-`routing.py`는 flow phase를 LangGraph node로 바꿉니다.
-
-예를 들어 battle flow가 `BattlePhase.RESOLVE`로 이동하면 agent runtime은 `BattleNode.EXECUTE`로 이동해야 합니다. 이 매핑은 domain flow 규칙도, LangGraph edge table도 아니므로 `routing.py`에 둡니다.
+scenario subgraph의 edge table은 도메인마다 따로 두지 않고, `agent/graph/scenario_graph.py`의 공통 graph shape를 사용합니다.
 
 #### prompts.py
 
@@ -313,12 +305,10 @@ LangGraph state는 dict 기반으로 merge/update되기 때문에 `TypedDict`를
 `models.py`는 agent runtime model입니다.
 
 - `ParentNode`
-- `BattleNode`
-- `CraftNode`
 - `SubgraphEntry`
 - `SUBGRAPH_REGISTRY`
 
-node enum은 LangGraph node id로 쓰입니다. `SUBGRAPH_REGISTRY`는 parent graph가 사용 가능한 subgraph 목록을 알 수 있게 합니다.
+`ParentNode`는 parent graph node id로 쓰입니다. scenario 내부 node id는 `scenarios/spec.py`의 공통 `ScenarioNode`를 사용합니다. `SUBGRAPH_REGISTRY`는 parent graph가 사용 가능한 subgraph 목록을 알 수 있게 합니다.
 
 ### inbound
 
@@ -439,7 +429,7 @@ bootstrap -> outbound implementations
 9. `agent/nodes/`에 node wrapper를 추가한다.
 10. `agent/graph/`에 subgraph builder를 추가한다.
 11. `scenarios/registry.py`에서 parent graph wrapper를 추가한다.
-12. `agent/transitions.py`와 `agent/routing.py`에 LangGraph 전이를 추가한다.
+12. 필요하면 `agent/transitions.py`에 parent graph 전이를 추가한다.
 13. `bootstrap.py`에서 usecase/tool dependency를 graph에 주입한다.
 
 새 LLM provider를 추가할 때는 다음만 건드리는 것이 이상적입니다.
