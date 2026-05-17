@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from agentic_game.agent.nodes.scenario import (
+from agentic_game.agent.nodes.scenario_nodes import (
     make_ask_user_node,
     make_decision_node,
     make_flow_node,
     make_hitl_node,
 )
-from agentic_game.agent.scenario import ScenarioNode
-from agentic_game.agent.scenarios import DIALOGUE_SCENARIO
 from agentic_game.agent.state import DialogueState
 from agentic_game.domain.dialogue import DialogueEvent, DialoguePhase
 from agentic_game.flow.dialogue import serialize_dialogue_actions
 from agentic_game.flow.intent import infer_dialogue_event
+from agentic_game.scenarios.catalog import DIALOGUE_SCENARIO
+from agentic_game.scenarios.spec import ScenarioNode
 
 dialogue_decision_node = make_decision_node(
     default_phase=DialoguePhase.GREETING,

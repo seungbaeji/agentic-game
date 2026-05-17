@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from agentic_game.agent.graph.scenario import (
+from agentic_game.agent.graph.scenario_graph import (
     ScenarioGraphNodes,
     build_simple_scenario_subgraph,
 )
@@ -12,7 +12,7 @@ from agentic_game.agent.nodes.quest import (
     quest_hitl_node,
     quest_response_node,
 )
-from agentic_game.agent.nodes.scenario import scenario_decision_route, scenario_route
+from agentic_game.agent.nodes.scenario_nodes import scenario_decision_route, scenario_route
 from agentic_game.agent.state import QuestState
 
 

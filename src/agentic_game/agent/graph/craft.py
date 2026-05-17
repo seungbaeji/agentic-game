@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from agentic_game.agent.graph.scenario import (
-    ScenarioAdapter,
+from agentic_game.agent.graph.scenario_graph import (
+    ScenarioGraphDefinition,
     ScenarioGraphNodes,
-    build_scenario_adapter_subgraph,
+    build_scenario_definition_subgraph,
 )
 from agentic_game.agent.models import CraftNode
 from agentic_game.agent.nodes.craft import (
@@ -18,7 +18,6 @@ from agentic_game.agent.nodes.craft import (
     make_craft_decision_node,
     make_craft_response_node,
 )
-from agentic_game.agent.runtime.tools import ToolInvoker
 from agentic_game.agent.state import CraftState
 from agentic_game.agent.transitions import (
     CRAFT_DECISION_EDGES,
@@ -28,15 +27,16 @@ from agentic_game.agent.transitions import (
 )
 from agentic_game.application.ports import LLMPort, RandomPort, StorePort
 from agentic_game.domain.craft import CraftResult
+from agentic_game.engine.tool_runner import ToolInvoker
 
 
-def make_craft_adapter(
+def make_craft_graph_definition(
     *,
     llm: LLMPort,
     execute: Callable[[CraftState], CraftState],
-) -> ScenarioAdapter:
-    """Create the graph adapter for the craft scenario."""
-    return ScenarioAdapter(
+) -> ScenarioGraphDefinition:
+    """Create the graph definition for the craft scenario."""
+    return ScenarioGraphDefinition(
         state_schema=CraftState,
         node_names=CraftNode,
         graph_nodes=ScenarioGraphNodes(
@@ -74,6 +74,6 @@ def build_craft_subgraph(
             random=random,
         )
 
-    return build_scenario_adapter_subgraph(
-        make_craft_adapter(llm=llm, execute=execute_with_store)
+    return build_scenario_definition_subgraph(
+        make_craft_graph_definition(llm=llm, execute=execute_with_store)
     )
