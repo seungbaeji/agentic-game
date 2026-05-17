@@ -14,16 +14,19 @@
 2. [Glossary](glossary.md)
    scenario, phase, event, flow, ToolBinding 같은 용어를 짧게 확인합니다.
 
-3. [Flow-Centered Scenario Execution](node-flow.md)
+3. [State Model](state-model.md)
+   pure/stateless/stateful, command/query, state scope 같은 상태 경계를 먼저 잡습니다.
+
+4. [Flow-Centered Scenario Execution](node-flow.md)
    사용자 입력이 parent graph와 scenario graph를 거쳐 어떻게 실행되는지 봅니다.
 
-4. [Architecture](architecture.md)
+5. [Architecture](architecture.md)
    폴더별 책임과 의존성 방향을 봅니다.
 
-5. [Scenario Details](scenario-details.md)
+6. [Scenario Details](scenario-details.md)
    battle, craft, dialogue 같은 게임 샘플이 공통 구조를 어떻게 쓰는지 봅니다.
 
-6. [Tool Calling Architecture Comparison](tool-calling-comparison.md)
+7. [Tool Calling Architecture Comparison](tool-calling-comparison.md)
    일반 tool-calling agent와 이 프로젝트의 guarded workflow 방식 차이를 봅니다.
 
 ## 문서별 책임
@@ -32,6 +35,7 @@
 | --- | --- |
 | [LLM, Tool, Flow 입문 가이드](llm-tool-flow-guide.md) | 처음 읽는 사람을 위한 배경과 mental model |
 | [Glossary](glossary.md) | 용어 사전 |
+| [State Model](state-model.md) | pure/stateless/stateful, state scope, command/query 경계 |
 | [Flow-Centered Scenario Execution](node-flow.md) | runtime 실행 순서 |
 | [Architecture](architecture.md) | 패키지 경계, 의존성 방향, 확장 규칙 |
 | [Scenario Details](scenario-details.md) | 현재 게임 scenario별 동작 |

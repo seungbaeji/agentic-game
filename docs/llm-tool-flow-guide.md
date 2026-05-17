@@ -8,6 +8,8 @@
 
 이 프로젝트에서 다루는 문제는 LLM 때문에 완전히 새로 생긴 문제가 아닙니다. 오래전부터 CS와 소프트웨어 설계에서 다루던 workflow, state, command 처리 문제 위에 LLM을 얹는 것에 가깝습니다.
 
+여기서 말하는 stateless runtime은 "같은 입력이면 항상 같은 출력"이라는 뜻이 아닙니다. domain rule은 가능한 한 pure/deterministic하게 두고, agent runtime은 process memory에 session state를 들고 있지 않게 하며, domain state와 scenario 진행 상태는 scope가 있는 store에 저장하는 모델입니다. 자세한 구분은 [State Model](state-model.md)을 참고하세요.
+
 ### Finite State Machine
 
 현재 상태와 입력 event를 보고 다음 상태를 결정하는 모델입니다.
